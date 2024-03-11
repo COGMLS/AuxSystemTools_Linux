@@ -8,14 +8,6 @@
 # Custom Project Git Ignore Settings:
 #####################################################################
 
-# Custom Files Extentions to Ignore:
-*.cache
-*.temp
-
-# Custom Folders to Ignore:
-/[Pp]ackages
-/[Rr]eleases
-/[Tt]emp
 [Tt]emp
 [Tt]est
 [Tt]ests
