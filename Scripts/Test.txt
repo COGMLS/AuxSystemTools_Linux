@@ -1,0 +1,6 @@
+﻿packMng=yum
+packMngParams=-y -t
+useSudo=1
+Hello World
+Abc
+git-all
