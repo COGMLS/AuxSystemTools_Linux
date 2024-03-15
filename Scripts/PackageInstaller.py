@@ -1,6 +1,34 @@
 import os
 import sys
 
+# Help command line:
+helpCmd = ["-help","-h","-?"]
+
+# Help info:
+help = [
+    "\nPackage Installer Script for Linux OS",
+    "PARAMETERS:",
+    "\t-PackList\tPaths to package files (Only configuration files (.ini))",
+    "\t-Install\tDefine to install the packages, otherwise the packages will not been installed",
+    "\t-Test\t\tTest the packages that will be installed",
+    "\t-NewPackList\tCreate a new package list",
+    "\nEXAMPLES:",
+    "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
+    "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install"
+]
+
+# Package Installer file pattern:
+packageFilePattern = [
+    "# Package Manager Command: (example: yum, apt, apt-get, etc)",
+    "packMng=",
+    "# Package Manager Parameters: (example: --assume-yes)",
+    "# NOTE: For each parameter, use space between then like console command line",
+    "packMngParams=",
+    "# Set 1 to use sudo or 0 to disable (NOTE: do not use space after equal)",
+    "useSudo=",
+    "# Add all packages to install. One by line."
+]
+
 # Verify the platform:
 if not sys.platform.startswith('linux'):
     print("This script can only be used on Linux OS!")
@@ -15,6 +43,8 @@ bIsPackFileListOk = False
 bCtrlPackFileListTestPass = False
 bCtrlInstall = False
 bCtrlTest = False
+bCtrlNewPackList = False
+bCtrlShowHelp = False
 
 # Package File List Path:
 filePackageListPath = ""
@@ -57,30 +87,38 @@ class PackageMng:
         self.packMngParams = packMngParams
         pass
     
+    # Check if will use the Sudo command
     def GetUseSudo(self) -> bool:
         return self.bUseSudo
     
+    # Get the package manager name
     def GetPackMng(self) -> str:
         return self.packMng
 
+    # Get the parameters for package manager
     def GetPackParams(self) -> list[str]:
         return self.packMngParams
     
+    # Get the list of packages that will be installed
     def GetPackList(self) -> list[Package]:
         return self.packsList
     
+    # Add a list of packages to install
     def AddPackList(self, packList) -> None:
         self.packsList += packList
         pass
     
+    # Add an item to packages list to install
     def AddPackListItem(self, pack) -> None:
         self.packsList.append(pack)
         pass
 
+    # Clean the packages list to install
     def ResetPackList(self) -> None:
         self.packsList.clear()
         pass
 
+    # Get the command to install a package
     def GetCommand(self, index) -> str:
         if len(self.packsList) > 0:
 
@@ -110,6 +148,7 @@ class PackageMng:
         else:
             return ""
     
+    # Install the packages
     def InstallPackages(self) -> None:
         i = 0
         iMax = len(self.packsList)
@@ -125,16 +164,15 @@ class PackageMng:
             pass
         pass
 
+    # Test the packages to install
     def TestInstallPackages(self) -> None:
         i = 0
         iMax = len(self.packsList)
         for package in self.packsList:
             if i < iMax:
                 cmd = self.GetCommand(i)
-                if DEBUGSCRIPT:
-                    print("[TEST_MODE]::Installing package:",package)
-                    print("[TEST_MODE]::Executing command:",cmd)
-                    pass
+                print("[TEST_MODE]::Installing package:",package)
+                print("[TEST_MODE]::Executing command:",cmd,"\n")
                 pass
             i += 1
             pass
@@ -142,6 +180,7 @@ class PackageMng:
 
 # Verify the argument list:
 for arg in sys.argv:
+    arg = arg.lower()
     if DEBUGSCRIPT:
         print(arg)
         pass
@@ -151,18 +190,73 @@ for arg in sys.argv:
         filePackageListPath = arg
         pass
 
-    if arg == "-PackList" and not bIsPackFileListChk:
+    if arg == "-packlist" and not bIsPackFileListChk:
         bIsPackFileListOk = True
         bIsPackFileListChk = True
         pass
 
-    if arg == "-Install":
+    if arg == "-install":
         bCtrlInstall = True
         pass
 
-    if arg == "-Test":
+    if arg == "-test":
         bCtrlTest = True
         pass
+
+    if arg == "-newpacklist":
+        bCtrlNewPackList = True
+        pass
+
+    if arg == helpCmd[0] or arg == helpCmd[1] or arg == helpCmd[2] or len(sys.argv) == 1:
+        bCtrlShowHelp = True
+        break
+        pass
+
+# Test if there is no argument
+if bCtrlShowHelp:
+    i = 0
+    for hlpStr in help:
+        if i == 0:
+            j = 0
+            line = ""
+            terminalSize = os.get_terminal_size()
+
+            # Write a line divisor using 3/4 of console width
+            while j < terminalSize.columns * 0.75:
+                line += '-'
+                j = j + 1
+                pass
+            print(hlpStr)
+            print(line)
+            pass
+        else:
+            print(hlpStr,"\n")
+            pass
+        i = i + 1
+        pass
+    exit(0)
+    pass
+
+# Create the a new package file list:
+if bCtrlNewPackList:
+    newPathFilePath = os.path.realpath(__file__).replace(sys.argv[0],"NewPackList.ini")
+
+    try:
+        newFileObj = open(newPathFilePath, 'x')
+
+        for lp in packageFilePattern:
+            lp = lp + "\n"
+            newFileObj.write(lp)
+            pass
+
+        newFileObj.close()
+    except FileExistsError:
+        print("The file already exist!\nFilePath: ",newPathFilePath)
+    except:
+        print("Fail to create the file!")
+
+    exit(0)
+    pass
 
 # Test the package file list:
 if bIsPackFileListOk:
@@ -182,8 +276,30 @@ if bIsPackFileListOk:
             packMngParams = []
             packs2Install = []
 
+            # Read and interpret the file:
             for l in fileObj.readlines():
+                bIsComment = False
+
+                # Verify for commented lines:
                 if len(l) > 0:
+                    i = 0
+                    iMax = len(l)
+                    bIsValidChar = False
+                    while i < iMax:
+                        if l[i] == ' ':
+                            pass
+                        elif l[i] == '#' and not bIsValidChar:
+                            bIsComment = True
+                            break
+                        else:
+                            bIsValidChar = True
+                            break
+                        i = i + 1
+                        pass
+                    pass
+
+                # In case the line is not a comment, interpret it
+                if len(l) > 0 and not bIsComment:
                     l = l.replace('\n','')
                     if l.__contains__("packMng="):
                         packMngName = l.split('=')[1]
@@ -242,6 +358,7 @@ else:
     print("The Package File List wasn't defined!","\nPackList: ",filePackageListPath)
     exit(2)
 
+# Create the packages founded on files in CLI:
 for m in packMng:
     if bCtrlInstall and bCtrlTest:
         print("Can't use -Install and -Test parameters at the same time!")
