@@ -1,6 +1,22 @@
 import os
 import sys
 
+# Version info:
+__ScriptVersionNumber__ = {
+        "Major"     :   1,
+        "Minor"     :   5,
+        "Revision"  :   18
+    }
+
+def PrintScriptVersion() -> str:
+    strVer = "v."
+    strVer += __ScriptVersionNumber__["Major"].__str__()
+    strVer += "."
+    strVer += __ScriptVersionNumber__["Minor"].__str__()
+    strVer += "."
+    strVer += __ScriptVersionNumber__["Revision"].__str__()
+    return strVer
+
 # Help command line:
 helpCmd = ["-help","-h","-?"]
 
@@ -14,7 +30,8 @@ help = [
     "\t-NewPackList\tCreate a new package list",
     "\nEXAMPLES:",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
-    "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install"
+    "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install",
+    "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Test",
 ]
 
 # Package Installer file pattern:
@@ -182,6 +199,21 @@ class PackageMng:
             pass
         pass
 
+# Print the script header presentation:
+def PrintScriptPresentation() -> None:
+    j = 0
+    line = ""
+    terminalSize = os.get_terminal_size()
+
+    # Write a line divisor using 3/4 of console width
+    while j < terminalSize.columns * 0.75:
+        line += '-'
+        j = j + 1
+        pass
+    print(help[0]," - ",PrintScriptVersion())
+    print(line)
+    pass
+
 # Verify the argument list:
 for arg in sys.argv:
     arg = arg.lower()
@@ -221,17 +253,7 @@ if bCtrlShowHelp:
     i = 0
     for hlpStr in help:
         if i == 0:
-            j = 0
-            line = ""
-            terminalSize = os.get_terminal_size()
-
-            # Write a line divisor using 3/4 of console width
-            while j < terminalSize.columns * 0.75:
-                line += '-'
-                j = j + 1
-                pass
-            print(hlpStr)
-            print(line)
+            PrintScriptPresentation()
             pass
         else:
             print(hlpStr,"\n")
@@ -239,6 +261,9 @@ if bCtrlShowHelp:
         i = i + 1
         pass
     exit(0)
+    pass
+else:
+    PrintScriptPresentation()
     pass
 
 # Create the a new package file list:
@@ -270,7 +295,8 @@ if bIsPackFileListOk:
         if os.path.exists(packTmp):
             bCtrlPackFileListTestPass = True
             if DEBUGSCRIPT:
-                print("Found the Package File List (",packTmp,")")
+                exceptionStr = "Found the Package File List (" + packTmp + ")"
+                print(exceptionStr)
                 pass
 
             fileObj = open(packTmp, 'r')
@@ -336,12 +362,20 @@ if bIsPackFileListOk:
                         pass
                     else:
                         packs2Install.append(l)
-
-                        if DEBUGSCRIPT:
-                            print("To packs2Install:",l)
-                            pass
                         pass
                     pass
+                pass
+            
+            # Show the complete package list after read all lines (Only in Debug Mode):
+            if DEBUGSCRIPT:
+                print("\nPackages to install:")
+                i = 0
+                for pck in packs2Install:
+                    pckStr = "[" + i.__str__() + "]::" + pck
+                    print(pckStr)
+                    i = i + 1
+                    pass
+                print("")
                 pass
 
             fileObj.close()
