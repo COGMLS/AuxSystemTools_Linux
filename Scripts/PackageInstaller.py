@@ -29,13 +29,16 @@ packageFilePattern = [
     "# Add all packages to install. One by line."
 ]
 
+# DEBUG the Script
+DEBUGSCRIPT = True
+
 # Verify the platform:
 if not sys.platform.startswith('linux'):
     print("This script can only be used on Linux OS!")
-    exit(1)
-
-# DEBUG the Script
-DEBUGSCRIPT = True
+    if not DEBUGSCRIPT:
+        print("[DEBUG_MODE]::THIS SCRIPT IS EXECUTING IN DEBUG MODE!")
+        exit(1)
+    pass
 
 # Control variables:
 bIsPackFileListChk = False
@@ -85,6 +88,7 @@ class PackageMng:
         self.bUseSudo = bUseSudo
         self.packMng = packMngCmd
         self.packMngParams = packMngParams
+        self.packsList = []
         pass
     
     # Check if will use the Sudo command
@@ -344,9 +348,7 @@ if bIsPackFileListOk:
 
             packMngObj = PackageMng(packMngName, packMngParams, bUseSudo)
 
-            for pck in packs2Install:
-                packMngObj.AddPackListItem(pck)
-                pass
+            packMngObj.AddPackList(packs2Install)
 
             packMng.append(packMngObj)
             pass
