@@ -5,9 +5,10 @@ import sys
 __ScriptVersionNumber__ = {
         "Major"     :   1,
         "Minor"     :   5,
-        "Revision"  :   18
+        "Revision"  :   19
     }
 
+# Print the script version:
 def PrintScriptVersion() -> str:
     strVer = "v."
     strVer += __ScriptVersionNumber__["Major"].__str__()
@@ -53,8 +54,10 @@ DEBUGSCRIPT = True
 if not sys.platform.startswith('linux'):
     print("This script can only be used on Linux OS!")
     if not DEBUGSCRIPT:
-        print("[DEBUG_MODE]::THIS SCRIPT IS EXECUTING IN DEBUG MODE!")
         exit(1)
+    else:
+        print("[DEBUG_MODE]::THIS SCRIPT IS EXECUTING IN DEBUG MODE!")
+        pass
     pass
 
 # Control variables:
@@ -85,12 +88,15 @@ class Package:
         self.packParams = packParams
         pass
 
+    # Get the package information if will use sudo
     def GetNeedSudo(self) -> bool:
         return self.bNeedSudo
     
+    # Get the package name
     def GetName(self) -> str:
         return self.packName
 
+    # Get the package parameters
     def GetParams(self) -> list[str]:
         return self.packParams
 
