@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <exception>
+#include <stdexcept>
 
 class fontPack
 {
@@ -16,13 +18,14 @@ class fontPack
         std::filesystem::path path;
         std::wstring packName;
         installType type;
+        bool isInstalled;
 
     public:
         fontPack(std::filesystem::path fontPackDir);
         ~fontPack();
         void install();
         void remove();
-        listPack GetPackInfo();
+        listPack getPackInfo();
 };
 
 #endif // !FONT_PACK_HPP
