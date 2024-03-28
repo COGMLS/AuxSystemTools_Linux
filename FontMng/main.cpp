@@ -8,12 +8,25 @@ int main(int argc, const char* argv[])
 
     std::locale::global(loc);
 
-    std::cout << "Hello, from FontMng!\n";
+    std::wcout << "Font Package Manager for Linux\n";
 
-    std::string s = "\n";
+    std::wstring usr = L"";
 
-    std::cout << "Press enter to continue...";
-    std::cin >> s;
+    while (usr != L"exit")
+    {
+        usr = L"";
+        std::wcout << L"Use \"help\" for details. >";
+        std::wcin >> usr;
+
+        if (usr == L"hi")
+        {
+            std::wcout << "Say hi!" << std::endl;
+        }
+        else
+        {
+            std::wcout << L"Command not recognized! Make sure the command is only in lower case." << std::endl;
+        }
+    }
 
     return 0;
 }
