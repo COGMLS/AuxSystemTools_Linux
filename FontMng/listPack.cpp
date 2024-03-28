@@ -70,9 +70,13 @@ void printList(std::vector<listPack> &list, unsigned int maxWidth = 30)
             {
                 std::wcout << USR_INSTALL_W;
             }
-            else
+            else if (list.at(i).type == installType::SYSTEM_INSTALL)
             {
                 std::wcout << SYS_INSTALL_W;
+            }
+            else
+            {
+                std::wcout << REM_INSTALL_W;
             }
 
             std::wcout << std::endl;

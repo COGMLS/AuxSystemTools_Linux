@@ -12,7 +12,8 @@
 enum installType
 {
     USER_INSTALL,
-    SYSTEM_INSTALL
+    SYSTEM_INSTALL,
+    REMOVE_PACK
 };
 
 struct listPack
