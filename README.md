@@ -20,7 +20,7 @@ This project was created to help with managing and using the operation system. T
 
 | Name | Version | Notes |
 | ---- | ------- | ----- |
-| DataCleanTool | 0.1.0 | The tool is a script that receave the paths to clean and keep the computer with more free space available. |
+| PackageInstaller.py | 1.6.0 | Package installer helper to make easier to implement multiple packages in the system |
 
 ## Modules Available:
 #### PowerShell modules with simplified solutions to resolve the complex necessities.
@@ -33,7 +33,7 @@ This project was created to help with managing and using the operation system. T
 
 | Name | Version | Notes |
 | ---- | ------- | ----- |
-| Scripts for Backup | 1.0.0 | These scripts were design to work on specific computers. To make them compatible with a new machine, use the base scripts to add the particularities that machine has. |
+| UpdateSystem.py | 1.1.3 | Script to simplify the system update tasks |
 
 ## Tools Available:
 #### Tools contain the complex parameters to resolve complex problems and define settings.
