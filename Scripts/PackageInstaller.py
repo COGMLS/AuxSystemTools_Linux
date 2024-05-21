@@ -1,11 +1,12 @@
 import os
 import sys
+import time
 
 # Version info:
 __ScriptVersionNumber__ = {
         "Major"     :   1,
-        "Minor"     :   5,
-        "Revision"  :   19
+        "Minor"     :   6,
+        "Revision"  :   0
     }
 
 # Print the script version:
@@ -29,6 +30,7 @@ help = [
     "\t-Install\tDefine to install the packages, otherwise the packages will not been installed",
     "\t-Test\t\tTest the packages that will be installed",
     "\t-NewPackList\tCreate a new package list",
+    "\t-Delay #\tCreate a delay between packages installations in seconds"
     "\nEXAMPLES:",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install",
@@ -60,6 +62,9 @@ if not sys.platform.startswith('linux'):
         pass
     pass
 
+# Constants:
+SCRIPT_DEFAULT_DELAY_INSTALL = 1
+
 # Control variables:
 bIsPackFileListChk = False
 bIsPackFileListOk = False
@@ -68,6 +73,8 @@ bCtrlInstall = False
 bCtrlTest = False
 bCtrlNewPackList = False
 bCtrlShowHelp = False
+bCtrlDelayInstall = False
+ctrlDelayInstall = 1    # Delay between installations is disabled (in seconds)
 
 # Package File List Path:
 filePackageListPath = ""
@@ -78,6 +85,7 @@ packMng = []
 
 # Package class: contains the package informations
 class Package:
+    # Data Variables:
     bNeedSudo = False
     packName = ""
     packParams = []
@@ -102,10 +110,17 @@ class Package:
 
 # Package Manager class: contains the package manager details
 class PackageMng:
+    # Control Variables:
+    bDelayInstall = False
+    delayValue = SCRIPT_DEFAULT_DELAY_INSTALL
+
+    # Data variables:
     bUseSudo = False
     packMng = ""
     packMngParams = []
     packsList = []
+
+    # Methods:
 
     def __init__(self, packMngCmd, packMngParams, bUseSudo = False) -> None:
         self.bUseSudo = bUseSudo
@@ -186,6 +201,16 @@ class PackageMng:
                     print("[DEBUG]::Installing package:",package)
                     print("[DEBUG]::Executing command:",cmd)
                     pass
+                if sys.platform.startswith('linux'):
+                    os.system(cmd)  # Execute the command
+                    pass
+                else:
+                    print("[FAIL]::The packages only can be installed on Linux OS!")
+                    pass
+                
+                if self.bDelayInstall:
+                    time.sleep(self.delayValue)
+                    pass
                 pass
             i += 1
             pass
@@ -205,6 +230,17 @@ class PackageMng:
             pass
         pass
 
+    # Define delay in seconds or disable it, using zero
+    def setDelay(self, delay) -> None:
+        if delay > 0:
+            self.bDelayInstall = True
+            self.delayValue = delay
+            pass
+        else:
+            self.bDelayInstall = False
+            pass
+        pass
+
 # Print the script header presentation:
 def PrintScriptPresentation() -> None:
     j = 0
@@ -218,7 +254,11 @@ def PrintScriptPresentation() -> None:
         pass
     print(help[0]," - ",PrintScriptVersion())
     print(line)
+    time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL)
     pass
+
+# Control variables to argument analysis:
+ctrlArgs_TestDelayInstall = False
 
 # Verify the argument list:
 for arg in sys.argv:
@@ -247,6 +287,39 @@ for arg in sys.argv:
 
     if arg == "-newpacklist":
         bCtrlNewPackList = True
+        pass
+
+    if arg == "-Delay":
+        bCtrlDelayInstall = True
+        ctrlArgs_TestDelayInstall = True
+        ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL # To avoid a possible no more arguments to analyze, set the default value here
+        pass
+
+    if ctrlArgs_TestDelayInstall and arg != "-Delay":
+        ctrlArgs_WarningForceDefaultDelay = False
+        if arg.isdigit():
+            if arg > 0:
+                ctrlDelayInstall = arg
+                pass
+            else:
+                ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                ctrlArgs_WarningForceDefaultDelay = True
+                pass
+
+            if DEBUGSCRIPT:
+                print("Delay between installations was defined: ",ctrlDelayInstall," s\n")
+                pass
+            pass
+        else:
+            ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+            ctrlArgs_WarningForceDefaultDelay = True
+            pass
+        
+        if ctrlArgs_WarningForceDefaultDelay:
+            print("The delay parameter was not followed by a number to define the seconds to delay. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s \n")
+            pass
+
+        ctrlArgs_TestDelayInstall = False   # Disable ctrlArgs_TestDelayInstall after check.
         pass
 
     if arg == helpCmd[0] or arg == helpCmd[1] or arg == helpCmd[2] or len(sys.argv) == 1:
@@ -390,6 +463,10 @@ if bIsPackFileListOk:
 
             packMngObj.AddPackList(packs2Install)
 
+            if bCtrlDelayInstall:
+                packMngObj.setDelay(ctrlDelayInstall)
+                pass
+
             packMng.append(packMngObj)
             pass
         else:
@@ -406,18 +483,23 @@ for m in packMng:
         print("Can't use -Install and -Test parameters at the same time!")
         pass
     elif bCtrlInstall and not bCtrlTest:
-        print("\nInstalling packages with: ",m.packMng)
-        print("Package Manager Parameters: ",m.packMngParams)
+        print("\nInstalling packages with: ",m.GetPackMng())
+        print("Package Manager Parameters: ",m.GetPackParams())
         print("Using SUDO: ",m.bUseSudo,"\n")
         m.InstallPackages()
         pass
     elif not bCtrlInstall and bCtrlTest:
-        print("\nInstalling packages with: ",m.packMng)
-        print("Package Manager Parameters: ",m.packMngParams)
-        print("Using SUDO: ",m.bUseSudo,"\n")
+        print("\nInstalling packages with: ",m.GetPackMng())
+        print("Package Manager Parameters: ",m.GetPackParams())
+        print("Using SUDO: ",m.GetUseSudo(),"\n")
         m.TestInstallPackages()
         pass
     else:
         print(m)
+        pass
+
+    # Fast delay between package files:
+    if bCtrlDelayInstall:
+        time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL)
         pass
     pass
