@@ -20,7 +20,7 @@ This project was created to help with managing and using the operation system. T
 
 | Name | Version | Notes |
 | ---- | ------- | ----- |
-| PackageInstaller.py | 1.6.0 | Package installer helper to make easier to implement multiple packages in the system |
+| PackageInstaller.py | 1.6.3 | Package installer helper to make easier to implement multiple packages in the system |
 
 ## Modules Available:
 #### PowerShell modules with simplified solutions to resolve the complex necessities.
