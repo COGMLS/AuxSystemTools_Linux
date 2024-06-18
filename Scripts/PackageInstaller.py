@@ -6,7 +6,7 @@ import time
 __ScriptVersionNumber__ = {
         "Major"     :   1,
         "Minor"     :   6,
-        "Revision"  :   2
+        "Revision"  :   3
     }
 
 # Print the script version:
@@ -283,8 +283,11 @@ ctrlArgs_FoundDelayArg = False
 
 # Verify the argument list:
 argI = 0
+argLower = ""
 for arg in sys.argv:
-    arg = arg.lower()
+    argLower = ""
+    arglower = arg.lower()
+
     if bDebugScript:
         print(arg)
         pass
@@ -294,24 +297,24 @@ for arg in sys.argv:
         filePackageListPath = arg
         pass
 
-    if arg == "-packlist" and not bIsPackFileListChk:
+    if arglower == "-packlist" and not bIsPackFileListChk:
         bIsPackFileListOk = True
         bIsPackFileListChk = True
         pass
 
-    if arg == "-install":
+    if arglower == "-install":
         bCtrlInstall = True
         pass
 
-    if arg == "-test":
+    if arglower == "-test":
         bCtrlTest = True
         pass
 
-    if arg == "-newpacklist":
+    if arglower == "-newpacklist":
         bCtrlNewPackList = True
         pass
 
-    if arg == "-delay" and not ctrlArgs_FoundDelayArg:
+    if arglower == "-delay" and not ctrlArgs_FoundDelayArg:
         bCtrlDelayInstall = True
         ctrlArgs_TestDelayInstall = True
         ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL # To avoid a possible no more arguments to analyze, set the default value here
@@ -319,27 +322,30 @@ for arg in sys.argv:
         ctrlArgs_FoundDelayArg = True
         pass
 
-    if ctrlArgs_TestDelayInstall and arg != "-delay":
+    if ctrlArgs_TestDelayInstall and arglower != "-delay":
         # 0: Correctly defined. 1: Delay parameter is not greater than zero. 2: Delay parameter doesn't have a digit. -1: An exception occur. -2: Delay parameter is empty.
         ctrlArgs_WarningForceDefaultDelay = 0
 
         # Test the arg length if exist a next argument for delay parameter:
-        if len(arg) > ctrlArgs_DelayPos + 1:
-            argDelayValue = arg[ctrlArgs_DelayPos + 1]
+        if len(sys.argv) > ctrlArgs_DelayPos + 1:
+            argDelayValue = sys.argv[ctrlArgs_DelayPos + 1]
+
             # Test if the delay value is a number:
             try:
-                if arg.isdigit():
-                    if arg > 0:
-                        ctrlDelayInstall = arg
-                        pass
-                    else:
-                        ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
-                        ctrlArgs_WarningForceDefaultDelay = 1
-                        pass
+                # Try to convert the value:
+                try:
+                    argDelayValue = int(argDelayValue)
+                except:
+                    ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                    ctrlArgs_WarningForceDefaultDelay = 2
+
+                # Test the value:
+                if argDelayValue > 0 and ctrlArgs_WarningForceDefaultDelay == 0:
+                    ctrlDelayInstall = argDelayValue
                     pass
                 else:
                     ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
-                    ctrlArgs_WarningForceDefaultDelay = 2
+                    ctrlArgs_WarningForceDefaultDelay = 1
                     pass
             except:
                 ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
@@ -376,7 +382,7 @@ for arg in sys.argv:
         ctrlArgs_TestDelayInstall = False   # Disable ctrlArgs_TestDelayInstall after check.
         pass
 
-    if arg == helpCmd[0] or arg == helpCmd[1] or arg == helpCmd[2] or len(sys.argv) == 1:
+    if arglower == helpCmd[0] or arglower == helpCmd[1] or arglower == helpCmd[2] or len(sys.argv) == 1:
         bCtrlShowHelp = True
         break
         pass
@@ -435,6 +441,12 @@ if bIsPackFileListOk:
             pass
         if packTmp.endswith('"'):
             packTmp = packTmp.removesuffix('"')
+            pass
+
+        if bDebugScript:
+            print("[DEBUG]::Package file status:")
+            print("[DEBUG]::File: ",packTmp)
+            print("[DEBUG]::Exists: ",os.path.exists(packTmp))
             pass
 
         if os.path.exists(packTmp):
