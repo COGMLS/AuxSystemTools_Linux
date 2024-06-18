@@ -1,11 +1,12 @@
 import os
 import sys
+import time
 
 # Version info:
 __ScriptVersionNumber__ = {
         "Major"     :   1,
-        "Minor"     :   5,
-        "Revision"  :   19
+        "Minor"     :   6,
+        "Revision"  :   2
     }
 
 # Print the script version:
@@ -29,6 +30,8 @@ help = [
     "\t-Install\tDefine to install the packages, otherwise the packages will not been installed",
     "\t-Test\t\tTest the packages that will be installed",
     "\t-NewPackList\tCreate a new package list",
+    "\t-Delay #\tCreate a delay between packages installations in seconds",
+    "\t-Debug\tEnable the debug script"
     "\nEXAMPLES:",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install",
@@ -37,7 +40,7 @@ help = [
 
 # Package Installer file pattern:
 packageFilePattern = [
-    "# Package Manager Command: (example: yum, apt, apt-get, etc)",
+    "# Package Manager Command: (example: yum, apt, apt-get, dnf, etc)",
     "packMng=",
     "# Package Manager Parameters: (example: --assume-yes)",
     "# NOTE: For each parameter, use space between then like console command line",
@@ -48,17 +51,11 @@ packageFilePattern = [
 ]
 
 # DEBUG the Script
-DEBUGSCRIPT = True
+# This constant is only for development and internal test purposes. To test the script without changing it, use the -debug parameter
+DEBUGSCRIPT = False
 
-# Verify the platform:
-if not sys.platform.startswith('linux'):
-    print("This script can only be used on Linux OS!")
-    if not DEBUGSCRIPT:
-        exit(1)
-    else:
-        print("[DEBUG_MODE]::THIS SCRIPT IS EXECUTING IN DEBUG MODE!")
-        pass
-    pass
+# Constants:
+SCRIPT_DEFAULT_DELAY_INSTALL = 1
 
 # Control variables:
 bIsPackFileListChk = False
@@ -68,6 +65,29 @@ bCtrlInstall = False
 bCtrlTest = False
 bCtrlNewPackList = False
 bCtrlShowHelp = False
+bCtrlDelayInstall = False
+ctrlDelayInstall = 1        # Delay between installations is disabled (in seconds)
+bDebugScript = DEBUGSCRIPT  # Control the debug script.
+
+# Check for Debug parameter:
+if not bDebugScript:
+    for arg in sys.argv:
+        if arg.lower() == "-debug":
+            bDebugScript = True
+            break
+            pass
+        pass
+    pass
+
+# Verify the platform:
+if not sys.platform.startswith('linux'):
+    print("This script can only be used on Linux OS!")
+    if not bDebugScript:
+        exit(1)
+    else:
+        print("[DEBUG_MODE]::THIS SCRIPT IS EXECUTING IN DEBUG MODE!")
+        pass
+    pass
 
 # Package File List Path:
 filePackageListPath = ""
@@ -78,6 +98,7 @@ packMng = []
 
 # Package class: contains the package informations
 class Package:
+    # Data Variables:
     bNeedSudo = False
     packName = ""
     packParams = []
@@ -102,10 +123,17 @@ class Package:
 
 # Package Manager class: contains the package manager details
 class PackageMng:
+    # Control Variables:
+    bDelayInstall = False
+    delayValue = SCRIPT_DEFAULT_DELAY_INSTALL
+
+    # Data variables:
     bUseSudo = False
     packMng = ""
     packMngParams = []
     packsList = []
+
+    # Methods:
 
     def __init__(self, packMngCmd, packMngParams, bUseSudo = False) -> None:
         self.bUseSudo = bUseSudo
@@ -160,7 +188,7 @@ class PackageMng:
             i = 0
             iMax = len(self.packMngParams)
 
-            if iMax > 0:
+            if iMax > 0 and self.packMngParams[0] != '':
                 for param in self.packMngParams:
                     cmd += param
                     if i < iMax:
@@ -182,9 +210,19 @@ class PackageMng:
         for package in self.packsList:
             if i < iMax:
                 cmd = self.GetCommand(i)
-                if DEBUGSCRIPT:
+                if bDebugScript:
                     print("[DEBUG]::Installing package:",package)
                     print("[DEBUG]::Executing command:",cmd)
+                    pass
+                if sys.platform.startswith('linux'):
+                    os.system(cmd)  # Execute the command
+                    pass
+                else:
+                    print("[FAIL]::The packages only can be installed on Linux OS!")
+                    pass
+                
+                if self.bDelayInstall:
+                    time.sleep(self.delayValue)
                     pass
                 pass
             i += 1
@@ -205,6 +243,17 @@ class PackageMng:
             pass
         pass
 
+    # Define delay in seconds or disable it, using zero
+    def setDelay(self, delay) -> None:
+        if delay > 0:
+            self.bDelayInstall = True
+            self.delayValue = delay
+            pass
+        else:
+            self.bDelayInstall = False
+            pass
+        pass
+
 # Print the script header presentation:
 def PrintScriptPresentation() -> None:
     j = 0
@@ -218,12 +267,25 @@ def PrintScriptPresentation() -> None:
         pass
     print(help[0]," - ",PrintScriptVersion())
     print(line)
+
+    # Show the debug mode message if is in DEBUG MODE:
+    if bDebugScript:
+        print("DEBUG MODE ENABLED")
+        pass
+
+    time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL)
     pass
 
+# Control variables to argument analysis:
+ctrlArgs_TestDelayInstall = False
+ctrlArgs_DelayPos = -1
+ctrlArgs_FoundDelayArg = False
+
 # Verify the argument list:
+argI = 0
 for arg in sys.argv:
     arg = arg.lower()
-    if DEBUGSCRIPT:
+    if bDebugScript:
         print(arg)
         pass
 
@@ -249,10 +311,78 @@ for arg in sys.argv:
         bCtrlNewPackList = True
         pass
 
+    if arg == "-delay" and not ctrlArgs_FoundDelayArg:
+        bCtrlDelayInstall = True
+        ctrlArgs_TestDelayInstall = True
+        ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL # To avoid a possible no more arguments to analyze, set the default value here
+        ctrlArgs_DelayPos = argI
+        ctrlArgs_FoundDelayArg = True
+        pass
+
+    if ctrlArgs_TestDelayInstall and arg != "-delay":
+        # 0: Correctly defined. 1: Delay parameter is not greater than zero. 2: Delay parameter doesn't have a digit. -1: An exception occur. -2: Delay parameter is empty.
+        ctrlArgs_WarningForceDefaultDelay = 0
+
+        # Test the arg length if exist a next argument for delay parameter:
+        if len(arg) > ctrlArgs_DelayPos + 1:
+            argDelayValue = arg[ctrlArgs_DelayPos + 1]
+            # Test if the delay value is a number:
+            try:
+                if arg.isdigit():
+                    if arg > 0:
+                        ctrlDelayInstall = arg
+                        pass
+                    else:
+                        ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                        ctrlArgs_WarningForceDefaultDelay = 1
+                        pass
+                    pass
+                else:
+                    ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                    ctrlArgs_WarningForceDefaultDelay = 2
+                    pass
+            except:
+                ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                ctrlArgs_WarningForceDefaultDelay = -1
+            pass
+        else:
+            ctrlArgs_WarningForceDefaultDelay = -2
+            pass
+
+        # Treat the delay parameter warning messages:
+        if ctrlArgs_WarningForceDefaultDelay == 0 and bDebugScript:
+            print("The delay parameter was apllied. Using the value: ",ctrlDelayInstall," s.")
+            pass
+        elif ctrlArgs_WarningForceDefaultDelay == 1:
+            print("The delay parameter was not defined as a number greater than zero! Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+        elif ctrlArgs_WarningForceDefaultDelay == 2:
+            print("The delay parameter doens't have a number. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+        elif ctrlArgs_WarningForceDefaultDelay == -1:
+            print("An exception occur during the delay value processing. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+        else:
+            print("The delay parameter is empty. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+
+        # Show debug informations about delay parameter:
+        if bDebugScript:
+            print("Error code: ",ctrlArgs_WarningForceDefaultDelay,"\n")
+            pass
+        else:
+            print("\n")
+            pass
+
+        ctrlArgs_TestDelayInstall = False   # Disable ctrlArgs_TestDelayInstall after check.
+        pass
+
     if arg == helpCmd[0] or arg == helpCmd[1] or arg == helpCmd[2] or len(sys.argv) == 1:
         bCtrlShowHelp = True
         break
         pass
+
+    # Control the arg index:
+    argI = argI + 1
 
 # Test if there is no argument
 if bCtrlShowHelp:
@@ -298,9 +428,18 @@ if bIsPackFileListOk:
     filePackageListPath = filePackageListPath.split(',')
 
     for packTmp in filePackageListPath:
+
+        # Verify if the pack files has double quotes to avoid path tests errors:
+        if packTmp.startswith('"'):
+            packTmp = packTmp.removeprefix('"')
+            pass
+        if packTmp.endswith('"'):
+            packTmp = packTmp.removesuffix('"')
+            pass
+
         if os.path.exists(packTmp):
             bCtrlPackFileListTestPass = True
-            if DEBUGSCRIPT:
+            if bDebugScript:
                 exceptionStr = "Found the Package File List (" + packTmp + ")"
                 print(exceptionStr)
                 pass
@@ -340,7 +479,7 @@ if bIsPackFileListOk:
                     if l.__contains__("packMng="):
                         packMngName = l.split('=')[1]
 
-                        if DEBUGSCRIPT:
+                        if bDebugScript:
                             print("packMngName:",packMngName)
                             pass
                         pass
@@ -348,21 +487,21 @@ if bIsPackFileListOk:
                         lTmp = l.split('=')
                         packMngParams = lTmp[1].split(' ')
 
-                        if DEBUGSCRIPT:
+                        if bDebugScript:
                             print("packMngParams:",packMngParams)
                             pass
                         pass
                     elif l.__contains__("useSudo=1"):
                         bUseSudo = True
 
-                        if DEBUGSCRIPT:
+                        if bDebugScript:
                             print("useSudo:",bUseSudo)
                             pass
                         pass
                     elif l.__contains__("useSudo=0"):
                         bUseSudo = False
 
-                        if DEBUGSCRIPT:
+                        if bDebugScript:
                             print("useSudo:",bUseSudo)
                             pass
                         pass
@@ -373,7 +512,7 @@ if bIsPackFileListOk:
                 pass
             
             # Show the complete package list after read all lines (Only in Debug Mode):
-            if DEBUGSCRIPT:
+            if bDebugScript:
                 print("\nPackages to install:")
                 i = 0
                 for pck in packs2Install:
@@ -389,6 +528,10 @@ if bIsPackFileListOk:
             packMngObj = PackageMng(packMngName, packMngParams, bUseSudo)
 
             packMngObj.AddPackList(packs2Install)
+
+            if bCtrlDelayInstall:
+                packMngObj.setDelay(ctrlDelayInstall)
+                pass
 
             packMng.append(packMngObj)
             pass
@@ -406,18 +549,23 @@ for m in packMng:
         print("Can't use -Install and -Test parameters at the same time!")
         pass
     elif bCtrlInstall and not bCtrlTest:
-        print("\nInstalling packages with: ",m.packMng)
-        print("Package Manager Parameters: ",m.packMngParams)
+        print("\nInstalling packages with: ",m.GetPackMng())
+        print("Package Manager Parameters: ",m.GetPackParams())
         print("Using SUDO: ",m.bUseSudo,"\n")
         m.InstallPackages()
         pass
     elif not bCtrlInstall and bCtrlTest:
-        print("\nInstalling packages with: ",m.packMng)
-        print("Package Manager Parameters: ",m.packMngParams)
-        print("Using SUDO: ",m.bUseSudo,"\n")
+        print("\nInstalling packages with: ",m.GetPackMng())
+        print("Package Manager Parameters: ",m.GetPackParams())
+        print("Using SUDO: ",m.GetUseSudo(),"\n")
         m.TestInstallPackages()
         pass
     else:
         print(m)
+        pass
+
+    # Fast delay between package files:
+    if bCtrlDelayInstall:
+        time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL)
         pass
     pass
