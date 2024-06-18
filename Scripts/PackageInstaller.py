@@ -6,7 +6,7 @@ import time
 __ScriptVersionNumber__ = {
         "Major"     :   1,
         "Minor"     :   6,
-        "Revision"  :   1
+        "Revision"  :   2
     }
 
 # Print the script version:
@@ -278,8 +278,11 @@ def PrintScriptPresentation() -> None:
 
 # Control variables to argument analysis:
 ctrlArgs_TestDelayInstall = False
+ctrlArgs_DelayPos = -1
+ctrlArgs_FoundDelayArg = False
 
 # Verify the argument list:
+argI = 0
 for arg in sys.argv:
     arg = arg.lower()
     if bDebugScript:
@@ -308,34 +311,66 @@ for arg in sys.argv:
         bCtrlNewPackList = True
         pass
 
-    if arg == "-delay":
+    if arg == "-delay" and not ctrlArgs_FoundDelayArg:
         bCtrlDelayInstall = True
         ctrlArgs_TestDelayInstall = True
         ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL # To avoid a possible no more arguments to analyze, set the default value here
+        ctrlArgs_DelayPos = argI
+        ctrlArgs_FoundDelayArg = True
         pass
 
     if ctrlArgs_TestDelayInstall and arg != "-delay":
-        ctrlArgs_WarningForceDefaultDelay = False
-        if arg.isdigit():
-            if arg > 0:
-                ctrlDelayInstall = arg
-                pass
-            else:
-                ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
-                ctrlArgs_WarningForceDefaultDelay = True
-                pass
+        # 0: Correctly defined. 1: Delay parameter is not greater than zero. 2: Delay parameter doesn't have a digit. -1: An exception occur. -2: Delay parameter is empty.
+        ctrlArgs_WarningForceDefaultDelay = 0
 
-            if bDebugScript:
-                print("Delay between installations was defined: ",ctrlDelayInstall," s\n")
-                pass
+        # Test the arg length if exist a next argument for delay parameter:
+        if len(arg) > ctrlArgs_DelayPos + 1:
+            argDelayValue = arg[ctrlArgs_DelayPos + 1]
+            # Test if the delay value is a number:
+            try:
+                if arg.isdigit():
+                    if arg > 0:
+                        ctrlDelayInstall = arg
+                        pass
+                    else:
+                        ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                        ctrlArgs_WarningForceDefaultDelay = 1
+                        pass
+                    pass
+                else:
+                    ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                    ctrlArgs_WarningForceDefaultDelay = 2
+                    pass
+            except:
+                ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
+                ctrlArgs_WarningForceDefaultDelay = -1
             pass
         else:
-            ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL
-            ctrlArgs_WarningForceDefaultDelay = True
+            ctrlArgs_WarningForceDefaultDelay = -2
             pass
-        
-        if ctrlArgs_WarningForceDefaultDelay:
-            print("The delay parameter was not followed by a number to define the seconds to delay. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s \n")
+
+        # Treat the delay parameter warning messages:
+        if ctrlArgs_WarningForceDefaultDelay == 0 and bDebugScript:
+            print("The delay parameter was apllied. Using the value: ",ctrlDelayInstall," s.")
+            pass
+        elif ctrlArgs_WarningForceDefaultDelay == 1:
+            print("The delay parameter was not defined as a number greater than zero! Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+        elif ctrlArgs_WarningForceDefaultDelay == 2:
+            print("The delay parameter doens't have a number. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+        elif ctrlArgs_WarningForceDefaultDelay == -1:
+            print("An exception occur during the delay value processing. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+        else:
+            print("The delay parameter is empty. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            pass
+
+        # Show debug informations about delay parameter:
+        if bDebugScript:
+            print("Error code: ",ctrlArgs_WarningForceDefaultDelay,"\n")
+            pass
+        else:
+            print("\n")
             pass
 
         ctrlArgs_TestDelayInstall = False   # Disable ctrlArgs_TestDelayInstall after check.
@@ -345,6 +380,9 @@ for arg in sys.argv:
         bCtrlShowHelp = True
         break
         pass
+
+    # Control the arg index:
+    argI = argI + 1
 
 # Test if there is no argument
 if bCtrlShowHelp:
