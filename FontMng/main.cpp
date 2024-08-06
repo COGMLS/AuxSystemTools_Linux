@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "fontPack.hpp"
+#include "commands.hpp"
 #include <vector>
 
 int main(int argc, const char* argv[])
@@ -17,16 +18,21 @@ int main(int argc, const char* argv[])
     std::wcout << L"Use \"help\" for details. >";
     while (std::getline(std::wcin, usr))
     {
-        if (usr == L"exit")
+        std::vector<cmd> cmds = getCmdList(usr);
+
+        cmd* c = &cmds[0];  // only the first "command" will be considered as a user command entry
+
+        if (*c == CMDTYPE::EXIT_CMD)
         {
             break;
         }
-
-        if (usr == L"hi")
+        
+        if (*c == CMDTYPE::HELP_CMD)
         {
-            std::wcout << "Say hi!" << std::endl;
+
         }
-        else if (usr.starts_with(L"add "))
+
+        if (*c == CMDTYPE::ADD_CMD)
         {
             usr.erase(0, std::wstring(L"add ").size());
 
@@ -48,7 +54,24 @@ int main(int argc, const char* argv[])
 
             std::wcout << L"Path exists: " << std::filesystem::exists(p) << std::endl;
         }
-        else
+
+        if (*c == CMDTYPE::REMOVE_CMD)
+        {
+
+        }
+
+        if (*c == CMDTYPE::LIST_CMD)
+        {
+            std::vector<cmd> cmds = getCmdList(usr);
+
+            std::wcout << L"Command List:" << std::endl;
+            for (size_t i = 0; i < cmds.size(); i++)
+            {
+                std::wcout << L"[" << i << L"]::" << cmds[i] << std::endl;
+            }
+        }
+
+        if (*c == CMDTYPE::ARGUMENT || *c == CMDTYPE::UNKNOWN_CMD)
         {
             std::wcout << L"Command not recognized! Make sure the command is only in lower case." << std::endl;
         }
