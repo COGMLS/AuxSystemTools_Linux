@@ -34,25 +34,47 @@ int main(int argc, const char* argv[])
 
         if (*c == CMDTYPE::ADD_CMD)
         {
-            usr.erase(0, std::wstring(L"add ").size());
-
-            if (usr.starts_with(L'\"') || usr.starts_with(L'\''))
+            size_t i = 1;
+            int argsAvailable = 0;
+            while (i < cmds.size())
             {
-                usr.erase(0, 1);
+                if (cmds[i] == CMDTYPE::ARGUMENT)
+                {
+                    argsAvailable++;
+                }
+                i++;
             }
-            
-            if (usr.ends_with(L'\"') || usr.ends_with(L'\''))
+
+            if (argsAvailable > 0)
             {
-                usr.erase(usr.size() - 1, 1);
+                for (i = 1; i < cmds.size(); i++)
+                {
+                    if (cmds[i] == CMDTYPE::ARGUMENT)
+                    {
+                        std::wstring tmp = cmds[i].getValue();
+
+                        if (tmp.starts_with(L'\"') || tmp.starts_with(L'\''))
+                        {
+                            tmp.erase(0, 1);
+                        }
+                        
+                        if (tmp.ends_with(L'\"') || tmp.ends_with(L'\''))
+                        {
+                            tmp.erase(tmp.size() - 1, 1);
+                        }
+                        
+                        std::wcout << L"Adding path:" << tmp << std::endl;
+
+                        std::filesystem::path p(tmp);
+
+                        std::wcout << L"Path exists: " << std::filesystem::exists(p) << std::endl;
+                    }
+                }
             }
-            
-            std::wstring tmp = usr;
-            
-            std::wcout << L"Adding path:" << tmp << std::endl;
-
-            std::filesystem::path p(tmp);
-
-            std::wcout << L"Path exists: " << std::filesystem::exists(p) << std::endl;
+            else
+            {
+                std::wcout << L"There are no arguments available for \"add\" command." << std::endl;
+            }
         }
 
         if (*c == CMDTYPE::REMOVE_CMD)
