@@ -1,5 +1,31 @@
 #include "listPack.hpp"
 
+std::list<std::wstring> getFontsList(bool listSysFonts)
+{
+    std::filesystem::path path;
+
+    if (listSysFonts)
+    {
+        path = SYS_FONT_PATH_W;
+    }
+    else
+    {
+        path = USR_FONT_PATH_W;
+    }
+
+    std::list<std::wstring> fonts;
+
+    for (std::filesystem::directory_entry d : std::filesystem::directory_iterator(path))
+    {
+        if (d.is_directory())
+        {
+            fonts.push_back(d.path().wstring());
+        }
+    }
+
+    return fonts;
+}
+
 void printList(std::vector<listPack> &list, unsigned int maxWidth = 30)
 {
     std::wstring header = L"";

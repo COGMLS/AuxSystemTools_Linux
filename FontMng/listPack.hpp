@@ -4,23 +4,27 @@
 #define LIST_PACK_HPP
 
 #include "pch.h"
-#include "constatnts.hpp"
+#include "constants.hpp"
 
 #include <vector>
 #include <string>
+#include <list>
+#include <filesystem>
 
 enum installType
 {
     USER_INSTALL,
-    SYSTEM_INSTALL,
-    REMOVE_PACK
+    SYSTEM_INSTALL
 };
 
 struct listPack
 {
     std::wstring name;
     installType type;
+    bool installed;
 };
+
+std::list<std::wstring> getFontsList (bool listSysFonts);
 
 /**
  * @brief Print list of packages to install
