@@ -9,55 +9,153 @@ fontPack::fontPack(std::filesystem::path fontPackDir)
         msg += fontPackDir.string();
         std::invalid_argument e(msg.c_str());
 
-        std::wcerr << e.what() << std::endl;
+        //std::wcerr << e.what() << std::endl;
 
         throw e;
     }
 
-    std::filesystem::path sysFontPath(SYS_FONT_PATH_W);
-    std::filesystem::path usrFontPath(USR_FONT_PATH_W);
+    bool isSysFont = false;
 
-    this->isInstalled = true;
+    if (fontPackDir.wstring().starts_with(SYS_FONT_PATH_W))
+    {
+        isSysFont = true;
+    }
+    else if (!fontPackDir.wstring().starts_with(USR_FONT_PATH_W))
+    {
+        std::string msg = "The given path directory is not part of User of System font managed! Path: ";
+        msg += fontPackDir.string();
+        std::invalid_argument e(msg.c_str());
 
-    if (fontPackDir.parent_path() == sysFontPath)
+        throw e;
+    }
+
+    this->packPath = fontPackDir;
+    this->packName = fontPackDir.filename().wstring();
+
+    if (isSysFont)
     {
         this->type = installType::SYSTEM_INSTALL;
     }
-    else if (fontPackDir.parent_path() == usrFontPath)
+    else
     {
         this->type = installType::USER_INSTALL;
     }
+
+    std::list<std::wstring> fonts = getFontsList(isSysFont);
+
+    auto installedFont = std::find(fonts.begin(), fonts.end(), this->packName);
+
+    if (*installedFont == this->packName)
+    {
+        this->isInstalled = true;
+    }
     else
     {
-        this->type = installType::REMOVE_PACK;
+        this->isInstalled = false;
+    }
+}
 
-        if (std::filesystem::exists(fontPackDir))
-        {
-            this->isInstalled = true;
-        }
-        else
-        {
-            std::wcout << L"The font package path co not exist. Path: " << fontPackDir.wstring() << std::endl;
-        }
+fontPack::fontPack(std::filesystem::path fontPackDir, bool sysInstall)
+{
+    // Test the path if is a directory:
+    if (!std::filesystem::is_directory(fontPackDir))
+    {
+        std::string msg = "Only a directory package can be used. Path: ";
+        msg += fontPackDir.string();
+        std::invalid_argument e(msg.c_str());
+
+        //std::wcerr << e.what() << std::endl;
+
+        throw e;
     }
 
-    this->path = fontPackDir;
+    this->packPath = fontPackDir;
     this->packName = fontPackDir.filename().wstring();
+
+    if (sysInstall)
+    {
+        this->type = installType::SYSTEM_INSTALL;
+    }
+    else
+    {
+        this->type = installType::USER_INSTALL;
+    }
+
+    std::list<std::wstring> fonts = getFontsList(sysInstall);
+
+    auto installedFont = std::find(fonts.begin(), fonts.end(), this->packName);
+
+    if (*installedFont == this->packName)
+    {
+        this->isInstalled = true;
+    }
+    else
+    {
+        this->isInstalled = false;
+    }
 }
 
 fontPack::~fontPack()
 {
-    std::wcout << L"Removed package: " << this->packName << std::endl;
+    
 }
 
-void fontPack::install()
+int fontPack::install()
 {
+    if (!this->isInstalled)
+    {
+        std::filesystem::path installPath;
+        std::error_code errorCode;
 
+        if (this->type == installType::SYSTEM_INSTALL)
+        {
+            installPath = SYS_FONT_PATH_W;
+        }
+        else
+        {
+            installPath = USR_FONT_PATH_W;
+        }
+
+        if (!this->isInstalled)
+        {
+            try
+            {
+                std::filesystem::copy(this->packPath, installPath, errorCode);
+                this->isInstalled = true;
+                return 1;
+            }
+            catch(const std::exception& e)
+            {
+                std::wcerr << e.what() << '\n';
+                return -1;
+            }
+        }
+    }
+
+    return 0;
 }
 
-void fontPack::remove()
+int fontPack::remove()
 {
+    if (this->isInstalled)
+    {
+        std::filesystem::path removePath;
+        std::error_code errorCode;
 
+        try
+        {
+            std::filesystem::remove(this->packPath, errorCode);
+            this->isInstalled = false;
+            return 1;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 listPack fontPack::getPackInfo()
@@ -66,6 +164,7 @@ listPack fontPack::getPackInfo()
 
     lp.name = this->packName;
     lp.type = this->type;
+    lp.installed = this->isInstalled;
 
     return lp;
 }
