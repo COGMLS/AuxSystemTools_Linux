@@ -24,7 +24,7 @@ struct listPack
     bool installed;
 };
 
-std::list<std::wstring> getFontsList (bool listSysFonts);
+std::list<std::wstring> getFontsList (bool listSysFonts, bool useOnlyNames);
 
 /**
  * @brief Print list of packages to install

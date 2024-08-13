@@ -1,6 +1,6 @@
 #include "listPack.hpp"
 
-std::list<std::wstring> getFontsList(bool listSysFonts)
+std::list<std::wstring> getFontsList(bool listSysFonts, bool useOnlyNames)
 {
     std::filesystem::path path;
 
@@ -19,7 +19,14 @@ std::list<std::wstring> getFontsList(bool listSysFonts)
     {
         if (d.is_directory())
         {
-            fonts.push_back(d.path().wstring());
+            if (useOnlyNames)
+            {
+                fonts.push_back(d.path().filename().wstring());
+            }
+            else
+            {
+                fonts.push_back(d.path().wstring());
+            }
         }
     }
 
