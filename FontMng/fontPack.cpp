@@ -2,6 +2,14 @@
 
 fontPack::fontPack(std::filesystem::path fontPackDir)
 {
+    // Verify if the path exist:
+    if (!std::filesystem::exists(fontPackDir))
+    {
+        std::string msg = "The path \"" + fontPackDir.string() + "\" doesn't exist!";
+        std::invalid_argument e(msg.c_str());
+        throw e;
+    }
+
     // Test the path if is a directory:
     if (!std::filesystem::is_directory(fontPackDir))
     {
@@ -41,7 +49,7 @@ fontPack::fontPack(std::filesystem::path fontPackDir)
         this->type = installType::USER_INSTALL;
     }
 
-    std::list<std::wstring> fonts = getFontsList(isSysFont);
+    std::list<std::wstring> fonts = getFontsList(isSysFont, true);
 
     auto installedFont = std::find(fonts.begin(), fonts.end(), this->packName);
 
@@ -57,6 +65,14 @@ fontPack::fontPack(std::filesystem::path fontPackDir)
 
 fontPack::fontPack(std::filesystem::path fontPackDir, bool sysInstall)
 {
+    // Verify if the path exist:
+    if (!std::filesystem::exists(fontPackDir))
+    {
+        std::string msg = "The path \"" + fontPackDir.string() + "\" doesn't exist!";
+        std::invalid_argument e(msg.c_str());
+        throw e;
+    }
+    
     // Test the path if is a directory:
     if (!std::filesystem::is_directory(fontPackDir))
     {
@@ -81,7 +97,7 @@ fontPack::fontPack(std::filesystem::path fontPackDir, bool sysInstall)
         this->type = installType::USER_INSTALL;
     }
 
-    std::list<std::wstring> fonts = getFontsList(sysInstall);
+    std::list<std::wstring> fonts = getFontsList(sysInstall, true);
 
     auto installedFont = std::find(fonts.begin(), fonts.end(), this->packName);
 
