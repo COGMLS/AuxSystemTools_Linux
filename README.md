@@ -1,6 +1,6 @@
 # Auxiliary System Tools for Linux
 
-> **WARNING:** THIS DOCUMENT IS NOT READY AND INFORMATIONS ABOUT IT, INCLUDING LICENSE INFORMATION WILL BE ADDED IN A FUTURE MOMENT.
+> **WARNING:** THIS DOCUMENT IS NOT READY AND INFORMATION ABOUT IT, INCLUDING LICENSE INFORMATION WILL BE ADDED IN A FUTURE MOMENT.
 
 ## About:
 
@@ -16,7 +16,7 @@ This project was created to help with managing and using the operation system. T
 | ---- | ------- | ----------- |
 
 ## Helpers Available:
-#### Auxiliar tools to make fast configurations.
+#### Auxiliary tools to make fast configurations.
 
 | Name | Version | Notes |
 | ---- | ------- | ----- |
@@ -43,3 +43,4 @@ This project was created to help with managing and using the operation system. T
 
 ## License:
 
+*No license was included at this moment*
