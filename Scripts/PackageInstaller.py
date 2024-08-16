@@ -5,9 +5,12 @@ import time
 # Version info:
 __ScriptVersionNumber__ = {
         "Major"     :   1,
-        "Minor"     :   6,
-        "Revision"  :   3
+        "Minor"     :   7,
+        "Revision"  :   0
     }
+
+# Configuration Version support:
+__ConfigVersionSupport__ = 2
 
 # Print the script version:
 def PrintScriptVersion() -> str:
@@ -32,14 +35,55 @@ help = [
     "\t-NewPackList\tCreate a new package list",
     "\t-Delay #\tCreate a delay between packages installations in seconds",
     "\t-Debug\tEnable the debug script"
+    "\t-Experimental\tEnable the experimental features (may not work as specked)"
     "\nEXAMPLES:",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Test",
 ]
 
+# Experimental Mode Warning Message:
+ExperimentalModeWarning = "/!\\ WARNING::The script is under experimental mode!"
+
+# Package Installer versioned file pattern:
+class packageFilePatternV2:
+    # Package File Pattern v.2 control variables:
+    __minVersion__ = 1
+    __maxVersion__ = 0 # Zero means no maximum version number
+    __description__ = ""
+    __config__ = ""
+    __value__ = ""
+
+    def __init__(self, description, configName, defaultValue="", minVersion=1, maxVersion=0) -> None:
+        self.__description__ = description
+        self.__configName__ = configName
+        self.__configValue__ = defaultValue
+        self.__minVersion__ = minVersion
+        self.__maxVersion__ = maxVersion
+        pass
+
+    def isConfigVersionOk(self) -> bool:
+        if self.__minVersion__ <= __ConfigVersionSupport__ and self.__maxVersion__ == 0:
+            return True
+        elif self.__minVersion__ <= __ConfigVersionSupport__ and self.__maxVersion__ >= __ConfigVersionSupport__:
+            return True
+        else:
+            return False
+        pass
+
+    def getDescription(self) -> str:
+        return self.__description__
+
+    def getConfig(self) -> str:
+        return self.__config__
+
+    def getValue(self) -> str:
+        return self.__value__
+
 # Package Installer file pattern:
 packageFilePattern = [
+    "#Package Version: determinate if can use newer features or not. NOTE: The version number is only accepted integers and equal or greater than one. Otherwise, it will throw a program exception."
+    "version=1"
     "# Package Manager Command: (example: yum, apt, apt-get, dnf, etc)",
     "packMng=",
     "# Package Manager Parameters: (example: --assume-yes)",
@@ -58,6 +102,7 @@ DEBUGSCRIPT = False
 SCRIPT_DEFAULT_DELAY_INSTALL = 1
 
 # Control variables:
+bExperimentalMode = False   # Determinate if will use the Experimental Features
 bIsPackFileListChk = False
 bIsPackFileListOk = False
 bCtrlPackFileListTestPass = False
@@ -96,17 +141,23 @@ packTmp = ""
 # Package Manage List:
 packMng = []
 
-# Package class: contains the package informations
+# Package class: contains the package information
 class Package:
     # Data Variables:
     bNeedSudo = False
     packName = ""
     packParams = []
+    
+    # Additional parameters for package installation, need use the configuration file in version 2
+    bUseOptionalParams = False
+    optPackParams = []
 
     def __init__(self, packName, bNeedSudo = False, packParams = []) -> None:
         self.packName = packName
         self.bNeedSudo = bNeedSudo
         self.packParams = packParams
+        self.bUseOptionalParams = False
+        self.optPackParams = []
         pass
 
     # Get the package information if will use sudo
@@ -120,6 +171,31 @@ class Package:
     # Get the package parameters
     def GetParams(self) -> list[str]:
         return self.packParams
+    
+    # Get the optional parameters status
+    def GetOptParamStatus(self) -> bool:
+        return self.bUseOptionalParams
+    
+    # Set to use or not the optional parameters
+    def SetOptParamStatus(self, bUseOptParam) -> None:
+        self.bUseOptionalParams = bUseOptParam
+        pass
+    
+    # Get the optional parameters
+    def GetOptParams(self) -> list[str]:
+        return self.optPackParams
+    
+    # Set the optional parameters
+    def SetOptParams(self, optPackParams) -> None:
+        # Experimental features:
+        if bExperimentalMode:
+            self.optPackParams = optPackParams
+
+            if len(optPackParams) > 0 and self.optPackParams[0] != '':
+                self.SetOptParamStatus(True)
+                pass
+            pass
+        pass
 
 # Package Manager class: contains the package manager details
 class PackageMng:
@@ -133,6 +209,10 @@ class PackageMng:
     packMngParams = []
     packsList = []
 
+    # Additional parameters:
+    bUseOptionalParams = False
+    optPackMngParams = []
+
     # Methods:
 
     def __init__(self, packMngCmd, packMngParams, bUseSudo = False) -> None:
@@ -140,6 +220,8 @@ class PackageMng:
         self.packMng = packMngCmd
         self.packMngParams = packMngParams
         self.packsList = []
+        self.bUseOptionalParams = False
+        self.optPackMngParams = []
         pass
     
     # Check if will use the Sudo command
@@ -154,6 +236,34 @@ class PackageMng:
     def GetPackParams(self) -> list[str]:
         return self.packMngParams
     
+    # Get the optional parameters for package manager
+    def GetOptPackMngParams(self) -> list[str]:
+        return self.optPackMngParams
+    
+    # Get the optional parameter setting:
+    def GetOptParamStatus(self) -> bool:
+        return self.bUseOptionalParams
+    
+    # Set to use or not the optional parameters:
+    def SetOptParamStatus(self, bUseOptPackMngParams) -> None:
+        # Experimental features:
+        if bExperimentalMode:
+            self.bUseOptionalParams = bUseOptPackMngParams
+            pass
+        pass
+
+    # Set the optional parameters for Package Manager
+    def SetOptParams(self, listOptPackMngParams) -> None:
+        # Experimental features:
+        if bExperimentalMode:
+            self.optPackMngParams = listOptPackMngParams
+
+            if len(self.optPackMngParams) > 0 and self.optPackMngParams[0] != '':
+                self.SetOptParamStatus(True)
+                pass
+            pass
+        pass
+
     # Get the list of packages that will be installed
     def GetPackList(self) -> list[Package]:
         return self.packsList
@@ -197,6 +307,29 @@ class PackageMng:
                         pass
                     pass
                 pass
+
+            # EXPERIMENTAL FEATURE: Add optional parameters
+            if self.bUseOptionalParams and bExperimentalMode:
+                # Add a space between the mandatory commands and optional ones:
+                if iMax > 0 and self.packMngParams[0] != '':
+                    cmd += " "
+                    pass
+                
+                # Same logic used in packMngParam:
+                i = 0
+                iMax = len(self.optPackMngParams)
+
+                if iMax > 0 and self.optPackMngParams[0] != '':
+                    for optParam in self.optPackMngParams:
+                        cmd += optParam
+                        if i < iMax:
+                            cmd += " "
+                            i += 1
+                            pass
+                        pass
+                    pass
+                pass
+            # ------------ END OF EXPERIMENTAL FEATURE ------------ #
 
             cmd += package
             return cmd
@@ -273,6 +406,12 @@ def PrintScriptPresentation() -> None:
         print("DEBUG MODE ENABLED")
         pass
 
+    # Show the experimental mode warning:
+    if bExperimentalMode:
+        print(ExperimentalModeWarning)
+        time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL * 2)
+        pass
+
     time.sleep(SCRIPT_DEFAULT_DELAY_INSTALL)
     pass
 
@@ -286,7 +425,7 @@ argI = 0
 argLower = ""
 for arg in sys.argv:
     argLower = ""
-    arglower = arg.lower()
+    argLower = arg.lower()
 
     if bDebugScript:
         print(arg)
@@ -297,24 +436,28 @@ for arg in sys.argv:
         filePackageListPath = arg
         pass
 
-    if arglower == "-packlist" and not bIsPackFileListChk:
+    if argLower == "-experimental":
+        bExperimentalMode = True
+        pass
+
+    if argLower == "-packlist" and not bIsPackFileListChk:
         bIsPackFileListOk = True
         bIsPackFileListChk = True
         pass
 
-    if arglower == "-install":
+    if argLower == "-install":
         bCtrlInstall = True
         pass
 
-    if arglower == "-test":
+    if argLower == "-test":
         bCtrlTest = True
         pass
 
-    if arglower == "-newpacklist":
+    if argLower == "-newpacklist":
         bCtrlNewPackList = True
         pass
 
-    if arglower == "-delay" and not ctrlArgs_FoundDelayArg:
+    if argLower == "-delay" and not ctrlArgs_FoundDelayArg:
         bCtrlDelayInstall = True
         ctrlArgs_TestDelayInstall = True
         ctrlDelayInstall = SCRIPT_DEFAULT_DELAY_INSTALL # To avoid a possible no more arguments to analyze, set the default value here
@@ -322,7 +465,7 @@ for arg in sys.argv:
         ctrlArgs_FoundDelayArg = True
         pass
 
-    if ctrlArgs_TestDelayInstall and arglower != "-delay":
+    if ctrlArgs_TestDelayInstall and argLower != "-delay":
         # 0: Correctly defined. 1: Delay parameter is not greater than zero. 2: Delay parameter doesn't have a digit. -1: An exception occur. -2: Delay parameter is empty.
         ctrlArgs_WarningForceDefaultDelay = 0
 
@@ -357,12 +500,12 @@ for arg in sys.argv:
 
         # Treat the delay parameter warning messages:
         if ctrlArgs_WarningForceDefaultDelay == 0 and bDebugScript:
-            print("The delay parameter was apllied. Using the value: ",ctrlDelayInstall," s.")
+            print("The delay parameter was defined. Using the value: ",ctrlDelayInstall," s.")
             pass
         elif ctrlArgs_WarningForceDefaultDelay == 1:
             print("The delay parameter was not defined as a number greater than zero! Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
         elif ctrlArgs_WarningForceDefaultDelay == 2:
-            print("The delay parameter doens't have a number. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
+            print("The delay parameter doesn't have a number. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
             pass
         elif ctrlArgs_WarningForceDefaultDelay == -1:
             print("An exception occur during the delay value processing. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
@@ -371,7 +514,7 @@ for arg in sys.argv:
             print("The delay parameter is empty. Using the default value: ",SCRIPT_DEFAULT_DELAY_INSTALL," s")
             pass
 
-        # Show debug informations about delay parameter:
+        # Show debug information about delay parameter:
         if bDebugScript:
             print("Error code: ",ctrlArgs_WarningForceDefaultDelay,"\n")
             pass
@@ -382,7 +525,7 @@ for arg in sys.argv:
         ctrlArgs_TestDelayInstall = False   # Disable ctrlArgs_TestDelayInstall after check.
         pass
 
-    if arglower == helpCmd[0] or arglower == helpCmd[1] or arglower == helpCmd[2] or len(sys.argv) == 1:
+    if argLower == helpCmd[0] or argLower == helpCmd[1] or argLower == helpCmd[2] or len(sys.argv) == 1:
         bCtrlShowHelp = True
         break
         pass
@@ -458,10 +601,38 @@ if bIsPackFileListOk:
 
             fileObj = open(packTmp, 'r')
 
+            cfgFileVersion = 1  # Assume 1 if the configuration version is not set in the file
+
             bUseSudo = False
             packMngName = ""
             packMngParams = []
             packs2Install = []
+
+            # EXPERIMENTAL FEATURE: Verify the configuration file for version support
+            optPackMngParams = []
+
+            if bExperimentalMode:
+                vStr = ""
+                for l in fileObj.readlines():
+                    if l.startswith("version="):
+                        vLine = l.split('=')
+                        vStr = vLine[1]
+                        break
+                    pass
+
+                # Test if the value is a number:
+                if vStr.isdigit():
+                    # Test if the version number is compatible with the script:
+                    if vStr >= 1 and vStr <= __ConfigVersionSupport__:
+                        cfgFileVersion = vStr
+                        pass
+                    pass
+
+                # Go back to the begin of the file
+                fileObj.seek(0)
+
+                pass
+            # ------------------- END OF EXPERIMENTAL FEATURE --------------------- #
 
             # Read and interpret the file:
             for l in fileObj.readlines():
@@ -503,6 +674,16 @@ if bIsPackFileListOk:
                             print("packMngParams:",packMngParams)
                             pass
                         pass
+                    # EXPERIMENTAL FEATURE: Verify the existence of optPackMngParams:
+                    elif l.__contains__("optPackMngParams=") and bExperimentalMode:
+                        lOptTmp = l.split('=')
+                        optPackMngParams = lOptTmp[1].split(' ')
+
+                        if bDebugScript:
+                            print("optPackMngParams:",optPackMngParams)
+                            pass
+                        pass
+                    # --------------- END OF EXPERIMENTAL FEATURE ----------------- #
                     elif l.__contains__("useSudo=1"):
                         bUseSudo = True
 
