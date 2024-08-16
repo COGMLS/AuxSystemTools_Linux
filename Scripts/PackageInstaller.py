@@ -34,8 +34,8 @@ help = [
     "\t-Test\t\tTest the packages that will be installed",
     "\t-NewPackList\tCreate a new package list",
     "\t-Delay #\tCreate a delay between packages installations in seconds",
-    "\t-Debug\tEnable the debug script"
-    "\t-Experimental\tEnable the experimental features (may not work as specked)"
+    "\t-Debug\tEnable the debug script",
+    "\t-Experimental\tEnable the experimental features (may not work as specked)",
     "\nEXAMPLES:",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>...",
     "\tPackageInstaller.py -PackList <PackListFile1Path.txt>,<PackListFile2Path.txt>... -Install",
