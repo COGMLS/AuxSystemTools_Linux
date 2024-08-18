@@ -96,13 +96,17 @@ packageFilePattern = [
 
 # DEBUG the Script
 # This constant is only for development and internal test purposes. To test the script without changing it, use the -debug parameter
-DEBUGSCRIPT = False
+DEBUG_SCRIPT = False
+
+# Enable EXPERIMENTAL features in this script
+# Experimental Mode for Development environment. This constant is only for used for development purposes, if you want use experimental feature, use -experimental parameter
+EXPERIMENTAL_MODE_DEV = False
 
 # Constants:
 SCRIPT_DEFAULT_DELAY_INSTALL = 1
 
 # Control variables:
-bExperimentalMode = False   # Determinate if will use the Experimental Features
+bExperimentalMode = EXPERIMENTAL_MODE_DEV   # Determinate if will use the Experimental Features
 bIsPackFileListChk = False
 bIsPackFileListOk = False
 bCtrlPackFileListTestPass = False
@@ -112,14 +116,16 @@ bCtrlNewPackList = False
 bCtrlShowHelp = False
 bCtrlDelayInstall = False
 ctrlDelayInstall = 1        # Delay between installations is disabled (in seconds)
-bDebugScript = DEBUGSCRIPT  # Control the debug script.
+bDebugScript = DEBUG_SCRIPT # Control the debug script.
 
-# Check for Debug parameter:
-if not bDebugScript:
+# Check for Debug and Experimental mode parameters:
+if not bDebugScript or not bExperimentalMode:
     for arg in sys.argv:
         if arg.lower() == "-debug":
             bDebugScript = True
-            break
+            pass
+        if arg.lower() == "-experimental":
+            bExperimentalMode = True
             pass
         pass
     pass
@@ -434,10 +440,6 @@ for arg in sys.argv:
     if bIsPackFileListOk and bIsPackFileListChk:
         bIsPackFileListChk = False
         filePackageListPath = arg
-        pass
-
-    if argLower == "-experimental":
-        bExperimentalMode = True
         pass
 
     if argLower == "-packlist" and not bIsPackFileListChk:
