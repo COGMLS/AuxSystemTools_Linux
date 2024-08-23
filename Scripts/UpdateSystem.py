@@ -67,10 +67,12 @@ configFilePattern = [
     "[ToolDefinitions]",
     "# Define the command to call the tool for update",
     "cmd=",
-    "# Common parameters used in all operations. Use the term '<PackList>' to define an specific location to UpdateSystem add the packages to update. By default the UpdateSystem add the package list in the end.",
+    "# Common parameters used in all operations.",# Use the term '<PackList>' to define an specific location to UpdateSystem add the packages to update. By default the UpdateSystem add the package list in the end.",
     "commonParams=",
     "# Set 1 to use sudo in all operations, 2 only in update tasks",
     "sudo=",
+    "# Set the command to use for update tasks. (NOTE: If the tool doesn't need use a update command, leave it empty)",
+    "updateArg=",
     "# Set specific command to confirm automatically the operation",
     "confirmArg=",
     "# Set specific command to automatically negate the operation",
@@ -81,6 +83,8 @@ configFilePattern = [
     "debugArg=",
     "# Set the verbose argument for the tool",
     "verboseArg=",
+    "# Set the exception parameter to be able to use the exception list",
+    "exceptArg=",
     "# Set the exception list files available in ~/.config/AuxSystemTools/UpdateSystem/ExceptList to be used with this tool",
     "# Exception lists holds package names one by line!",
     "# Use comma to separate the exception lists names. Eg. exceptListAllowed=nokernel,firefox",
@@ -109,11 +113,12 @@ class UpdateTask:
     # Control variables:
     __name__ = ""               # Task name
     __filepath__ = ""           # Task configuration's file path
-    __isValidTask__ = False     # Task validation variable
+    __isValidTask__ = True      # Task validation variable
     __version__ = 1             # Task version for config. file
 
     __sudoCmdType__ = 0
     __bHasCmd__ = False
+    __bHasUpdateParam__ = False
     __bHasConfirmParam__ = False
     __bHasNegateParam__ = False
     __bHasCheckParam__ = False
@@ -123,11 +128,13 @@ class UpdateTask:
 
     __cmd__ = ""                # Command line tool that wil be called to perform an specific action
     __commonParams__ = []       # Parameters used in both task methods: update and check. If a <PackList> is identified in common parameters, will insert in this location the package list for exceptions. Otherwise will add in the end of the common parameter list.
+    __updateParam__ = ""        # Command to update the packages
     __confirmParam__ = ""       # Command used to automate the confirmation like -y or --assumeyes or any other with the same behavior
     __negateParam__ = ""        # Command used to negate a task like -n or --assumeno or other parameters with the same behavior
     __checkParam__ = ""         # A check only or verification parameter
     __debugParam__ = ""         # A single command tha can enable the debug on cmd tool
     __verboseParam__ = ""       # A single command that if used with the cmd to enable the verbose mode
+    __exceptParam__ = ""        # Except parameter that holds a list of packages
     __allowedExceptList__ = []  # Holds the base names of all exception lists
     __exceptList__ = []         # Holds the path os all lists that was available in allowedExceptList and match with filterList
 
@@ -136,6 +143,7 @@ class UpdateTask:
     # Filter the Except List available with all lists that exist in the LOCAL_CONFIG_EXCEPTLIST and match with the user entry:
     def __filter_except_list__(self, filterList: list[str]) -> None:
         lExceptList = list[str]
+        # Get the exception lists available:
         if len(self.__allowedExceptList__) > 0:
             if os.path.exists(LOCAL_CONFIG_EXCEPTLIST):
                 exceptFiles = os.listdir(LOCAL_CONFIG_EXCEPTLIST)
@@ -149,6 +157,7 @@ class UpdateTask:
                 pass
             pass
 
+        # Filter the exception lists allowed for the current task:
         if len(filterList) > 0 and len(lExceptList) > 0:
             for i in filterList:
                 if lExceptList.__contains__(i):
@@ -160,7 +169,7 @@ class UpdateTask:
 
     # Get the exception packages inside a exception file:
     def __get_except_packages__(self, exceptFile: str) -> list[str]:
-        lExceptList = list[str]
+        lExceptPackageList = list[str]
         try:
             file = open(exceptFile, 'r')
 
@@ -184,7 +193,7 @@ class UpdateTask:
                         pass
 
                     if not bIsComment:
-                        lExceptList.append(l)
+                        lExceptPackageList.append(l)
                         pass
                     pass
                 pass
@@ -194,7 +203,23 @@ class UpdateTask:
                 print(f"[DEBUG]::[TASK - {self.__name__}]::Fail to get the packages in {exceptFile}")
                 pass
             pass
-        return lExceptList
+        return lExceptPackageList
+    
+    def __transform_param_list(self, paramList: list[str]) -> str:
+        argLine = ""
+
+        i = 0
+        iMax = len(paramList)
+        for p in paramList:
+            if i + 1 < iMax:
+                argLine = argLine + p + " "
+                pass
+            else:
+                argLine = argLine + p
+                pass
+            i = i + 1
+            pass
+        return argLine
 
     def __organize_param_list__(self, paramList: list[str]) -> list[str]:
         lParamList = list[str]
@@ -284,6 +309,15 @@ class UpdateTask:
                                     pass
                                 pass
 
+                            # Check for update parameter:
+                            if l.startswith("updateArg="):
+                                l = l.removeprefix("updateArg=")
+                                if len(l) > 0 and l != "":
+                                    self.__updateParam__ = l
+                                    self.__bHasUpdateParam__ = True
+                                    pass
+                                pass
+
                             # Check for common parameters:
                             if l.startswith("commonParams="):
                                 l = l.removeprefix("commonParams=")
@@ -364,6 +398,15 @@ class UpdateTask:
                                     pass
                                 pass
 
+                            # Check for exception argument value:
+                            if l.startswith("exceptArg="):
+                                l = l.removeprefix("exceptArg=")
+                                if len(l) > 0 and l != "":
+                                    self.__exceptParam__ = l
+                                    self.__bUseExceptList__ = True
+                                    pass
+                                pass
+
                             # Check for a allowed exception list:
                             if l.startswith("exceptListAllowed="):
                                 l = l.removeprefix("exceptListAllowed=")
@@ -392,11 +435,13 @@ class UpdateTask:
                     print(f"Version:{self.__version__}")
                     print(f"Command [{self.__bHasCmd__}]:{self.__cmd__}")
                     print(f"CommonParams:{self.__commonParams__}")
+                    print(f"UpdateParam [{self.__bHasUpdateParam__}]:{self.__updateParam__}")
                     print(f"ConfirmParam [{self.__bHasConfirmParam__}]:{self.__confirmParam__}")
                     print(f"NegateParam [{self.__bHasNegateParam__}]:{self.__negateParam__}")
                     print(f"CheckParam [{self.__bHasCheckParam__}]:{self.__checkParam__}")
                     print(f"VerboseParam [{self.__bHasVerboseParam__}]:{self.__verboseParam__}")
                     print(f"DebugParam [{self.__bHasDebugParam__}]:{self.__debugParam__}")
+                    print(f"ExceptParam [{self.__bUseExceptList__}]:{self.__exceptParam__}")
                     print(f"AllowedExceptList:{self.__allowedExceptList__}")
                     print(f"ExceptList:{self.__exceptList__}")
                     pass
@@ -412,11 +457,13 @@ class UpdateTask:
                     print(f"Version:{self.__version__}")
                     print(f"Command [{self.__bHasCmd__}]:{self.__cmd__}")
                     print(f"CommonParams:{self.__commonParams__}")
+                    print(f"UpdateParam [{self.__bHasUpdateParam__}]:{self.__updateParam__}")
                     print(f"ConfirmParam [{self.__bHasConfirmParam__}]:{self.__confirmParam__}")
                     print(f"NegateParam [{self.__bHasNegateParam__}]:{self.__negateParam__}")
                     print(f"CheckParam [{self.__bHasCheckParam__}]:{self.__checkParam__}")
                     print(f"VerboseParam [{self.__bHasVerboseParam__}]:{self.__verboseParam__}")
                     print(f"DebugParam [{self.__bHasDebugParam__}]:{self.__debugParam__}")
+                    print(f"ExceptParam [{self.__bUseExceptList__}]:{self.__exceptParam__}")
                     print(f"AllowedExceptList:{self.__allowedExceptList__}")
                     print(f"ExceptList:{self.__exceptList__}")
                     pass
@@ -448,6 +495,9 @@ class UpdateTask:
     def getCommonParams(self) -> list[str]:
         return self.__commonParams__
     
+    def getUpdateParam(self) -> str:
+        return self.__updateParam__
+    
     def getConfirmParam(self) -> str:
         return self.__confirmParam__
     
@@ -459,6 +509,9 @@ class UpdateTask:
     
     def getDebugParam(self) -> str:
         return self.__debugParam__
+    
+    def getExceptParam(self) -> str:
+        return self.__exceptParam__
     
     def getExceptList(self) -> list[str]:
         return self.__allowedExceptList__
@@ -472,10 +525,126 @@ class UpdateTask:
     # Task Methods:
 
     def Update(self) -> int:
-        pass
+        if self.__isValidTask__:
+            if bUpdate:
+                cmdLine = ""
+
+                if self.__sudoCmdType__ > 0:
+                    cmdLine = "sudo"
+                    pass
+
+                if self.__bHasCmd__:
+                    cmdLine = cmdLine + " " + self.__cmd__
+                    pass
+
+                if len(self.__commonParams__) > 0:
+                    lArgs = self.__transform_param_list(self.__commonParams__)
+                    cmdLine = cmdLine + " " + lArgs
+                    pass
+
+                if bConfirmChanges and self.__bHasConfirmParam__:
+                    cmdLine = cmdLine + " " + self.__confirmParam__
+                    pass
+
+                if bVerboseMode and self.__bHasVerboseParam__:
+                    cmdLine = cmdLine + " " + self.__verboseParam__
+                    pass
+
+                if bDebugCmdTask and self.__bHasDebugParam__:
+                    cmdLine = cmdLine + " " + self.__debugParam__
+                    pass
+
+                if bUseExceptList and self.__bUseExceptList__:
+                    exceptPacks = ""
+                    i = 0
+                    iMax = len(self.__exceptList__)
+                    for e in self.__exceptList__:
+                        exceptList = self.__get_except_packages__(e)
+                        tmpStr = self.__transform_param_list(exceptList)
+                        if i == 0:
+                            exceptPacks += tmpStr
+                            pass
+                        else:
+                            exceptPacks = exceptPacks + " " + tmpStr
+                            pass
+                        i = i + 1
+                        pass
+
+                    cmdLine = cmdLine + " " + exceptPacks
+                    pass
+
+                return os.system(cmdLine)
+            else:
+                if bVerboseMode or bDebugScript:
+                    print(f"[TASK - {self.__name__}]::Update parameter was not defined!")
+                    pass
+                return -2
+        else:
+            print(f"[TASK - {self.__name__}]::This task has a configuration problem and can not be used for updates.")
+            return -1
 
     def Check(self) -> int:
-        pass
+        if self.__isValidTask__:
+            if bCheckOnly:
+                cmdLine = ""
+
+                if self.__sudoCmdType__ == 2:
+                    cmdLine = "sudo "
+                    pass
+
+                if self.__bHasCmd__:
+                    cmdLine = cmdLine + self.__cmd__
+                    pass
+
+                if len(self.__commonParams__) > 0:
+                    lArgs = self.__transform_param_list(self.__commonParams__)
+                    cmdLine = cmdLine + " " + lArgs
+                    pass
+
+                if self.__bHasNegateParam__ and not self.__checkParam__:
+                    cmdLine = cmdLine + " " + self.__negateParam__
+                    pass
+
+                if self.__bHasCheckParam__:
+                    cmdLine = cmdLine + " " + self.__checkParam__
+                    pass
+
+                if bVerboseMode and self.__bHasVerboseParam__:
+                    cmdLine = cmdLine + " " + self.__verboseParam__
+                    pass
+
+                if bDebugCmdTask and self.__bHasDebugParam__:
+                    cmdLine = cmdLine + " " + self.__debugParam__
+                    pass
+
+                if bUseExceptList and self.__bUseExceptList__:
+                    exceptPacks = ""
+                    i = 0
+                    iMax = len(self.__exceptList__)
+                    for e in self.__exceptList__:
+                        exceptList = self.__get_except_packages__(e)
+                        tmpStr = self.__transform_param_list(exceptList)
+                        if i == 0:
+                            exceptPacks += tmpStr
+                            pass
+                        else:
+                            exceptPacks = exceptPacks + " " + tmpStr
+                            pass
+                        i = i + 1
+                        pass
+
+                    cmdLine = cmdLine + " " + exceptPacks
+                    pass
+
+                return os.system(cmdLine)
+            else:
+                if bVerboseMode or bDebugScript:
+                    print(f"[TASK - {self.__name__}]::Check parameter was not defined!")
+                    pass
+                return -2
+        else:
+            print(f"[TASK - {self.__name__}]::This task has a configuration problem and can not be used for updates checks.")
+            return -1
 
 # Check the configuration files and exception list directories. If the directory does not exist, create it:
 def CheckConfigDirectory(configPath: str) -> int:
