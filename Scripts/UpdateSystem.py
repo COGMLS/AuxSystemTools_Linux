@@ -25,6 +25,7 @@ bDebugCmdTask = False
 bUseExceptList = False
 bUseAllExceptList = False
 bNewConfigFile = False
+bNewExceptFile = False
 bListConfig = False
 bListConfigPriority = False
 maxCfgVersionSupported = 1          # Determinate the maximum version number for configuration files
@@ -34,7 +35,7 @@ taskExceptList = []
 # Global configurations for UpdateSystem.py
 CONFIG_EXTENSION = ".ini"
 LOCAL_CONFIG = os.getenv("HOME") + "/.config/AuxSystemTools/UpdateSystem"
-LOCAL_CONFIG_EXCEPTLIST = LOCAL_CONFIG + "/ExceptList"
+LOCAL_CONFIG_EXCEPT_LIST = LOCAL_CONFIG + "/ExceptList"
 
 # Help command line:
 helpCmd = ["-help","-h","-?"]
@@ -52,7 +53,7 @@ help = [
     "\t-Update\tAllow to apply automatically the updates*",
     "\t-Except [All | configName1,...]\tUse exception lists available in configuration files.\n\t\tUsing 'All' will assume to all configuration files that has a exception list.\n\t\tOtherwise use the config. name (for more than one, use comma to separate).",
     "\t-NewConfig [name]\tCreate a new configuration file with a specific name.\n\t\tYou need to set the commands and package names to make it work.",
-    #"\t-NewExceptList [name]\tCreate a new exception list with a specific name.\n\t\tYou need to set the package names. If the a empty list if loaded, it will be ignored."
+    "\t-NewExceptList [name]\tCreate a new exception list with a specific name.\n\t\tYou need to set the package names. If the a empty list if loaded, it will be ignored."
     "\t-ListConfig\tList all configuration files available.",
     "\t-ListTaskOrder\tList the task orders. Will show the highest priority to lowest.",
     "\n\nNOTES:",
@@ -140,13 +141,13 @@ class UpdateTask:
 
     # Internal methods:
 
-    # Filter the Except List available with all lists that exist in the LOCAL_CONFIG_EXCEPTLIST and match with the user entry:
+    # Filter the Except List available with all lists that exist in the LOCAL_CONFIG_EXCEPT_LIST and match with the user entry:
     def __filter_except_list__(self, filterList: list[str]) -> None:
         lExceptList = list[str]
         # Get the exception lists available:
         if len(self.__allowedExceptList__) > 0:
-            if os.path.exists(LOCAL_CONFIG_EXCEPTLIST):
-                exceptFiles = os.listdir(LOCAL_CONFIG_EXCEPTLIST)
+            if os.path.exists(LOCAL_CONFIG_EXCEPT_LIST):
+                exceptFiles = os.listdir(LOCAL_CONFIG_EXCEPT_LIST)
                 for excFile in exceptFiles:
                     if os.path.isfile(excFile) and excFile.endswith(CONFIG_EXTENSION):
                         if self.__allowedExceptList__.__contains__(os.path.basename(excFile).removesuffix(CONFIG_EXTENSION)):
@@ -653,9 +654,12 @@ def CheckConfigDirectory(configPath: str) -> int:
 
     try:
         os.makedirs(configPath)
-        return 0
-    except:
+        # Make sure the directory was created:
+        if os.path.exists(configPath):
+            return 0
         return 1
+    except:
+        return -1
     pass
 
 # Get the configuration files and return a list:
@@ -677,7 +681,7 @@ def CreateNewScriptFile(filename: str, filetype: int) -> int:
         pass
     elif filetype == 1:
         # Create a new exception file:
-        newPathFilePath = LOCAL_CONFIG_EXCEPTLIST + f"/{filename}" + CONFIG_EXTENSION
+        newPathFilePath = LOCAL_CONFIG_EXCEPT_LIST + f"/{filename}" + CONFIG_EXTENSION
         filePattern = exceptListPattern
         pass
     else:
@@ -762,6 +766,8 @@ ctrlArgs_FoundExceptArg = False
 #ctrlArgs_ExceptPos = -1
 ctrlArgs_FoundNewConfigFileArg = False
 ctrlArgs_NewConfigFileName = ""
+ctrlArgs_FoundNewExceptFileArg = False
+ctrlArgs_NewExceptFileName = ""
 
 # Verify the argument list:
 argI = 0
@@ -820,6 +826,7 @@ for arg in sys.argv:
         ctrlArgs_FoundExceptArg = True
         pass
     
+    # Test for new configuration file:
     if argLower == "-newconfig" and not ctrlArgs_FoundNewConfigFileArg:
         bNewConfigFile = True
         ctrlArgs_FoundNewConfigFileArg = True
@@ -848,7 +855,39 @@ for arg in sys.argv:
                 # Fail to get the new config file's name
                 pass
             pass
-            ctrlArgs_NewConfigFileName = False  # Disable the search for new configuration file name when done.
+            ctrlArgs_FoundNewConfigFileArg = False  # Disable the search for new configuration file name when done.
+        pass
+
+    # Test if will add a new except file:
+    if argLower == "-newexceptlist" and not ctrlArgs_FoundNewExceptFileArg:
+        bNewExceptFile = True
+        ctrlArgs_FoundNewExceptFileArg = True
+        pass
+
+    if argLower != "-newexceptlist" and ctrlArgs_FoundNewExceptFileArg:
+        if argvSize > 2:
+            lastArg = sys.argv[argI - 1].lower()
+            if lastArg == "-newexceptlist":
+                # Verify if the exception file's name contains a possible character that is not allowed:
+                if argLower.startswith('-') or argLower.__contains__('/') or argLower.__contains__('\\'):
+                    # Not a valid name
+                    print("The file name can not have the characters: '/', '\\' or start with '-'.")
+                    exit(6)
+                    pass
+                elif argLower == "all":
+                    # If "all" was used as a exception file name
+                    print("The file name 'all' can not be used for a configuration file, because is a keyword to specify all exception lists!")
+                    exit(7)
+                    pass
+                else:
+                    ctrlArgs_NewExceptFileName = sys.argv[argI]
+                    pass
+                pass
+            else:
+                # Fail to get the new config file's name
+                pass
+            pass
+            ctrlArgs_FoundNewExceptFileArg = False  # Disable the search for new configuration file name when done.
         pass
 
     if argLower == "-listconfig":
@@ -870,6 +909,16 @@ for arg in sys.argv:
 
     # Control the arg index:
     argI = argI + 1
+
+# If the "all" keyword was used or the was implicit the all exceptions to be used with the UpdateTasks, get all exception files:
+if bUseAllExceptList:
+    lExceptList = os.listdir(LOCAL_CONFIG_EXCEPT_LIST)
+    for e in lExceptList:
+        if e.endswith(CONFIG_EXTENSION):
+            taskExceptList.append(os.path.basename(e).removesuffix(CONFIG_EXTENSION))
+            pass
+        pass
+    pass
 
 # Test if there is no argument
 if bCtrlShowHelp:
@@ -903,6 +952,10 @@ if os.getuid() != 0 and not DEBUG_SCRIPT and bLegacyMode:
     print("[FAIL]::The script is not running with super user rights!")
     exit(2)
 
+if bNewConfigFile and bNewExceptFile:
+    print("[FAIL]::Is not possible to create the configuration file and the exception file list at the same time!")
+    exit(8)
+
 if bNewConfigFile:
     if ctrlArgs_NewConfigFileName != "":
         if CreateNewScriptFile(ctrlArgs_NewConfigFileName, 0) == 0:
@@ -913,6 +966,18 @@ if bNewConfigFile:
             exit(5)
     else:
         print("Fail to create the configuration file. A name for the configuration is needed.")
+        exit(3)
+
+if bNewExceptFile:
+    if ctrlArgs_NewExceptFileName != "":
+        if CreateNewScriptFile(ctrlArgs_NewExceptFileName, 1) == 0:
+            print(f"Created the exception file: {LOCAL_CONFIG}/{ctrlArgs_NewConfigFileName}{CONFIG_EXTENSION}")
+            exit(0)
+        else:
+            print(f"Fail to create the exception file: {LOCAL_CONFIG}/{ctrlArgs_NewConfigFileName}{CONFIG_EXTENSION}")
+            exit(5)
+    else:
+        print("Fail to create the exception file. A name for the exception is needed.")
         exit(3)
 
 # Enter on list mode:
@@ -938,7 +1003,7 @@ else:
     # Test first the directories:
     if CheckConfigDirectory(LOCAL_CONFIG) != 0:
         pass
-    if CheckConfigDirectory(LOCAL_CONFIG_EXCEPTLIST) != 0:
+    if CheckConfigDirectory(LOCAL_CONFIG_EXCEPT_LIST) != 0:
         pass
     pass
 
