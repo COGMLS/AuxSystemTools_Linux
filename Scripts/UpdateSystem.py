@@ -206,7 +206,7 @@ class UpdateTask:
             pass
         return lExceptPackageList
     
-    def __transform_param_list(self, paramList: list[str]) -> str:
+    def __transform_param_list__(self, paramList: list[str]) -> str:
         argLine = ""
 
         i = 0
@@ -539,7 +539,7 @@ class UpdateTask:
                     pass
 
                 if len(self.__commonParams__) > 0:
-                    lArgs = self.__transform_param_list(self.__commonParams__)
+                    lArgs = self.__transform_param_list__(self.__commonParams__)
                     cmdLine = cmdLine + " " + lArgs
                     pass
 
@@ -561,7 +561,7 @@ class UpdateTask:
                     iMax = len(self.__exceptList__)
                     for e in self.__exceptList__:
                         exceptList = self.__get_except_packages__(e)
-                        tmpStr = self.__transform_param_list(exceptList)
+                        tmpStr = self.__transform_param_list__(exceptList)
                         if i == 0:
                             exceptPacks += tmpStr
                             pass
@@ -598,7 +598,7 @@ class UpdateTask:
                     pass
 
                 if len(self.__commonParams__) > 0:
-                    lArgs = self.__transform_param_list(self.__commonParams__)
+                    lArgs = self.__transform_param_list__(self.__commonParams__)
                     cmdLine = cmdLine + " " + lArgs
                     pass
 
@@ -624,7 +624,7 @@ class UpdateTask:
                     iMax = len(self.__exceptList__)
                     for e in self.__exceptList__:
                         exceptList = self.__get_except_packages__(e)
-                        tmpStr = self.__transform_param_list(exceptList)
+                        tmpStr = self.__transform_param_list__(exceptList)
                         if i == 0:
                             exceptPacks += tmpStr
                             pass
