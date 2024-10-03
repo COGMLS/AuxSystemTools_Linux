@@ -8,7 +8,7 @@
 # the follow instruction:
 # 
 # if [[ -f "$HOME/.CustomUsrPath.sh" ]]; then
-# 	. "$HOME/CustomUsrPath.sh"
+# 	. "$HOME/.CustomUsrPath.sh"
 # fi
 #
 # IMPORTANT: If the file ~/bash_profile
