@@ -201,11 +201,8 @@ class Size:
 DEBUG_SCRIPT = True
 ENABLE_EXPERIMENTAL_FEATURES = True
 DEFAULT_SWAP_FILE_PATH = "/swap.img"
-FSTAB_FILE_PATH = "/media/mlsma/Apps-Media/Projetos/GitRepos/AuxSystemTools_Linux/Temp/fstab"
-FSTAB_FILE_PATH_BACKUP = "/media/mlsma/Apps-Media/Projetos/GitRepos/AuxSystemTools_Linux/Temp/fstab.back"
-
-#FSTAB_FILE_PATH = "/etc/fstab"
-#FSTAB_FILE_PATH_BACKUP = "/temp/fstab.back"
+FSTAB_FILE_PATH = "/etc/fstab"
+FSTAB_FILE_PATH_BACKUP = "/temp/fstab.back"
 
 # Internal variables:
 
