@@ -13,24 +13,24 @@ __ScriptVersionNumber__ = {
 DEBUG_SCRIPT = False
 
 # Control Variables:
-bDebugScript = DEBUG_SCRIPT
-bVerboseMode = False
-bLegacyMode = True
-bUpdate = True
-bConfirmChanges = False
-bCtrlShowHelp = False
-bRunAsAdmin = False
-bCheckOnly = False
-bDebugCmdTask = False
-bUseExceptList = False
-bUseAllExceptList = False
-bNewConfigFile = False
-bNewExceptFile = False
-bListConfig = False
-bListConfigPriority = False
+bDebugScript = DEBUG_SCRIPT	        # Script Debug Mode
+bVerboseMode = False                # Verbose Mode
+bLegacyMode = True                  # Control if the Legacy Mode will run
+bUpdate = True                      # Control if the Update Task will be applied
+bConfirmChanges = False             # Control if the changes must be confirmed
+bCtrlShowHelp = False               # Show the script or run tasks
+bRunAsAdmin = False                 # Control the admin. privileges
+bCheckOnly = False                  # Define if will only verify the Update Tasks
+bDebugCmdTask = False               # Debug a Update Task command line. This control variable depends on Debug Mode
+bUseExceptList = False              # Define to use exception list
+bUseGlobalExceptList = False        # Define to use Global Exception List
+bNewConfigFile = False              # Control to create a new configuration file. This control variable is used to control the script procedures
+bNewExceptFile = False              # Control to create a new exception list. This control variable is used to control the script procedures
+bListConfig = False                 # Determinate if the script is in List Mode
+bListConfigPriority = False         # Determinate if the script is in List Mode. This control variable, check the configuration priority and print the list following the priority
 maxCfgVersionSupported = 1          # Determinate the maximum version number for configuration files
 
-taskExceptList = []
+globalTaskExceptList = []           # Global Exception List
 
 # Global configurations for UpdateSystem.py
 CONFIG_EXTENSION = ".ini"
@@ -70,7 +70,7 @@ configFilePattern = [
     "cmd=",
     "# Common parameters used in all operations.",# Use the term '<PackList>' to define an specific location to UpdateSystem add the packages to update. By default the UpdateSystem add the package list in the end.",
     "commonParams=",
-    "# Set 1 to use sudo in all operations, 2 only in update tasks",
+    "# Set 1 to use sudo in all operations, 2 only in update tasks. Zero will run with user privileges",
     "sudo=",
     "# Set the command to use for update tasks. (NOTE: If the tool doesn't need use a update command, leave it empty)",
     "updateArg=",
@@ -109,14 +109,15 @@ if not bDebugScript:
         pass
     pass
 
-# Class to create manageable object that can apply the custom tasks
+# Class to create manageable objects that can apply the custom tasks
 class UpdateTask:
     # Control variables:
     __name__ = ""               # Task name
     __filepath__ = ""           # Task configuration's file path
     __isValidTask__ = True      # Task validation variable
     __version__ = 1             # Task version for config. file
-
+    
+    __priority__ = -1
     __sudoCmdType__ = 0
     __bHasCmd__ = False
     __bHasUpdateParam__ = False
@@ -648,6 +649,9 @@ class UpdateTask:
             return -1
 
 # Check the configuration files and exception list directories. If the directory does not exist, create it:
+# Return: -1 - In case an exception occurred
+# Return: 0 - When the directory exist
+# Return: 1 - In case the directory was not created
 def CheckConfigDirectory(configPath: str) -> int:
     if os.path.exists(configPath):
         return 0
@@ -663,6 +667,7 @@ def CheckConfigDirectory(configPath: str) -> int:
     pass
 
 # Get the configuration files and return a list:
+# WARNING: This function does not test the path!
 def GetConfigFilesList(path: str) -> list:
     filesList = []
     for i in os.listdir(path):
@@ -673,6 +678,7 @@ def GetConfigFilesList(path: str) -> list:
     return filesList
 
 # Create a new script supported file for the user
+# WARNING: This function does not check if the path exist!
 def CreateNewScriptFile(filename: str, filetype: int) -> int:
     if filetype == 0:
         # Create the a new package file list:
@@ -806,17 +812,17 @@ for arg in sys.argv:
             lastArg = sys.argv[argI - 1].lower()
             if lastArg == "-except":
                 if argLower == "all":
-                    bUseAllExceptList = True
+                    bUseGlobalExceptList = True
                     pass
                 else:
-                    taskExceptList = lastArg.split(',')
+                    globalTaskExceptList = lastArg.split(',')
                     pass
                 pass
             pass
         else:
             # Fail to get the exception list. Assume to use all exception lists available.
             print("NO SPECIFIC EXCEPTION BEHAVIOR WAS DEFINED! ASSUMING ALL EXCEPTION LISTS AVAILABLE.")
-            bUseAllExceptList = True
+            bUseGlobalExceptList = True
             pass
         ctrlArgs_FoundExceptArg = False # Disable the search for exception lists when done.
         pass
@@ -911,11 +917,11 @@ for arg in sys.argv:
     argI = argI + 1
 
 # If the "all" keyword was used or the was implicit the all exceptions to be used with the UpdateTasks, get all exception files:
-if bUseAllExceptList:
+if bUseGlobalExceptList:
     lExceptList = os.listdir(LOCAL_CONFIG_EXCEPT_LIST)
     for e in lExceptList:
         if e.endswith(CONFIG_EXTENSION):
-            taskExceptList.append(os.path.basename(e).removesuffix(CONFIG_EXTENSION))
+            globalTaskExceptList.append(os.path.basename(e).removesuffix(CONFIG_EXTENSION))
             pass
         pass
     pass
