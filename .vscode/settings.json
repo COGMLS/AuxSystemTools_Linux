@@ -15,14 +15,14 @@
         "files.eol": "\n"
     },
     "[c]": {
-        "editor.wordBasedSuggestions": "currentDocument",
+        "editor.wordBasedSuggestions": "matchingDocuments",
         "editor.suggest.insertMode": "replace",
         "editor.semanticHighlighting.enabled": true,
         "files.autoGuessEncoding": true,
         "files.encoding": "utf8"
     },
     "[cpp]": {
-        "editor.wordBasedSuggestions": "currentDocument",
+        "editor.wordBasedSuggestions": "matchingDocuments",
         "editor.suggest.insertMode": "replace",
         "editor.semanticHighlighting.enabled": true,
         "files.autoGuessEncoding": true,
@@ -49,5 +49,7 @@
         },
         "editor.suggest.preview": true,
         "files.encoding": "utf8"
-    }
+    },
+    "cmake.options.statusBarVisibility": "icon",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
