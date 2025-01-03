@@ -49,6 +49,8 @@ project(
 # Include libraries directories source codes:
 include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/ImageTool")
 include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/DiskTools")
+include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/Common")
+include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/HostTools")
 
 # Define the executable properties:
 add_executable(
