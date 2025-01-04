@@ -19,7 +19,10 @@ namespace LnxImgBack
 	 */
 	std::string getUserName();
 
-	int hasRootRights();
+	/**
+	 * @brief Detect if the process is running with root rights to perform the operations
+	 */
+	bool hasRootRights();
 }
 
 #endif // !SYSTEM_TOOLS_HPP
