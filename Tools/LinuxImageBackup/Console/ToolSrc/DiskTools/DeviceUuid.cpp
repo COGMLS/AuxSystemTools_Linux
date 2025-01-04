@@ -37,6 +37,10 @@ void uuidStr2lower(std::string &str)
 	}
 }
 
+DeviceUuid::DeviceUuid()
+{	
+}
+
 DeviceUuid::DeviceUuid(std::string uuid_str)
 {
 	uuidStr2lower(uuid_str);

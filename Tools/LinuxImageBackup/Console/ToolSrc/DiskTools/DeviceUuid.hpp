@@ -23,6 +23,12 @@ class DeviceUuid
 	public:
 
 		/**
+		 * @brief Create an empty Device UUID object.
+		 * @note This object will return empty strings for UUID and Device Name.
+		 */
+		DeviceUuid();
+
+		/**
 		 * @brief Store a Device UUID based on given string
 		 * @param uuid_str UUID string
 		 */
