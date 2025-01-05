@@ -15,6 +15,9 @@ cmake_minimum_required(VERSION 3.28)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Define Linux Image Backup Tool location:
+set(LinuxImageBackupToolSrc ${CMAKE_CURRENT_LIST_DIR})
+
 # Define if is Windows Environment:
 
 if(WIN32)
@@ -56,6 +59,15 @@ include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/HostTools")
 add_executable(
 					LinuxImageBackupTool
 					"main.cpp"
+					# ToolSrc files:
+					# Common:
+					"ToolSrc/Common/DateTime.hpp" "ToolSrc/Common/DateTime.cpp"
+					# DiskTools:
+					"ToolSrc/DiskTools/DevDefines.hpp"
+					"ToolSrc/DiskTools/DeviceUuid.hpp" "ToolSrc/DiskTools/DeviceUuid.cpp"
+					# HostTools:
+					"ToolSrc/HostTools/SysTools.hpp" "ToolSrc/HostTools/SysTools.cpp"
+					# ImageTools:
 				)
 
 # Define manual library link:
