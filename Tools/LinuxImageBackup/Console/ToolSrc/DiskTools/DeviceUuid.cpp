@@ -45,8 +45,7 @@ DeviceUuid::DeviceUuid(std::string uuid_str)
 {
 	uuidStr2lower(uuid_str);
 
-	char* c_uuid_str = nullptr;
-	std::strcpy(c_uuid_str, uuid_str.c_str());
+	char* c_uuid_str = const_cast<char*>(uuid_str.c_str());
 	const char* delim = "-";
 	char* token = std::strtok(c_uuid_str, delim);
 
@@ -65,9 +64,9 @@ DeviceUuid::DeviceUuid(std::filesystem::path uuid_device_path)
 	if (std::filesystem::is_block_file(uuid_device_path))
 	{
 		std::filesystem::path device_path = std::filesystem::read_symlink(uuid_device_path);
-		this->device_name = device_path.stem();
+		this->device_name = device_path.stem().string();
 
-		std::string uuid_str = uuid_device_path.stem();
+		std::string uuid_str = uuid_device_path.stem().string();
 
 		uuidStr2lower(uuid_str);
 
