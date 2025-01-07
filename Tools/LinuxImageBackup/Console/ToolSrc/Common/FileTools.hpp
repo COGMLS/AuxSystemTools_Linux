@@ -12,6 +12,7 @@
  * @brief Extract the file lines into a vector of strings
  * @param filepath File path
  * @param data Vector to hold the file lines
+ * @param ignoreFilePerms Ignore file permissions. Will not generate the return 5.
  * @return 0 if success extract the file lines
  * @return 1 if the filepath does not exist
  * @return 2 if is not a regular file
@@ -19,13 +20,14 @@
  * @return 4 if an exception occur
  * @return 5 if the user does not have permission to reade/write the file
  */
-int extractFile (std::filesystem::path filepath, std::vector<std::string>& data);
+int extractFile (std::filesystem::path filepath, std::vector<std::string>& data, bool ignoreFilePerms = false);
 
 /**
  * @brief Write the vector of strings into a file
  * @param filepath File path
  * @param data Vector that holds the files lines
  * @param writingType 0: Rewrite the complete file (lost previous data). 1: Insert the new data on begin of the file. 2: Insert the new data on the end of the file. Any other value will make the function return 6 (Invalid argument).
+ * @param ignoreFilePerms Ignore file permissions. Will not generate the return 5.
  * @return 0 successful wrote the file lines
  * @return 1 if the filepath does not exist
  * @return 2 if is not a regular file
@@ -34,7 +36,7 @@ int extractFile (std::filesystem::path filepath, std::vector<std::string>& data)
  * @return 5 if the user does not have permission to reade/write the file
  * @return 6 if an invalid argument was passed
  */
-int writeFile (std::filesystem::path filepath, std::vector<std::string>& data, short writingType = 2);
+int writeFile (std::filesystem::path filepath, std::vector<std::string>& data, short writingType = 2, bool ignoreFilePerms = false);
 
 /**
  * @brief Extract a value inside a file with key-pair data: <key>=<value>.

@@ -1,6 +1,6 @@
 #include "FileTools.hpp"
 
-int extractFile(std::filesystem::path filepath, std::vector<std::string> &data)
+int extractFile(std::filesystem::path filepath, std::vector<std::string> &data, bool ignoreFilePerms)
 {
 	if (!std::filesystem::exists(filepath))
 	{
@@ -18,7 +18,7 @@ int extractFile(std::filesystem::path filepath, std::vector<std::string> &data)
 
 	std::filesystem::file_status status = std::filesystem::status(filepath);
 
-	if ((status.permissions() & std::filesystem::perms::owner_read) == std::filesystem::perms::owner_read)
+	if ((status.permissions() & std::filesystem::perms::owner_read) == std::filesystem::perms::owner_read && !ignoreFilePerms)
 	{
 		return 5;
 	}
@@ -50,7 +50,7 @@ int extractFile(std::filesystem::path filepath, std::vector<std::string> &data)
     return 0;
 }
 
-int writeFile(std::filesystem::path filepath, std::vector<std::string> &data, short writingType)
+int writeFile(std::filesystem::path filepath, std::vector<std::string> &data, short writingType, bool ignoreFilePerms)
 {
 	bool file_exist = std::filesystem::exists(filepath);
 
@@ -78,7 +78,8 @@ int writeFile(std::filesystem::path filepath, std::vector<std::string> &data, sh
 
 		if (
 				(status.permissions() & std::filesystem::perms::owner_read) == std::filesystem::perms::owner_read && 
-				(status.permissions() & std::filesystem::perms::owner_write) == std::filesystem::perms::owner_write
+				(status.permissions() & std::filesystem::perms::owner_write) == std::filesystem::perms::owner_write && 
+				!ignoreFilePerms
 			)
 		{
 			return 5;
@@ -115,7 +116,8 @@ int writeFile(std::filesystem::path filepath, std::vector<std::string> &data, sh
 
 		if (
 				(status.permissions() & std::filesystem::perms::owner_read) == std::filesystem::perms::owner_read && 
-				(status.permissions() & std::filesystem::perms::owner_write) == std::filesystem::perms::owner_write
+				(status.permissions() & std::filesystem::perms::owner_write) == std::filesystem::perms::owner_write && 
+				!ignoreFilePerms
 			)
 		{
 			return 5;
