@@ -62,8 +62,10 @@ add_executable(
 					# ToolSrc files:
 					# Common:
 					"ToolSrc/Common/DateTime.hpp" "ToolSrc/Common/DateTime.cpp"
+					"ToolSrc/Common/FileTools.hpp" "ToolSrc/Common/FileTools.cpp"
 					# DiskTools:
 					"ToolSrc/DiskTools/DevDefines.hpp"
+					"ToolSrc/DiskTools/Devices.hpp" "ToolSrc/DiskTools/Devices.cpp"
 					"ToolSrc/DiskTools/DeviceUuid.hpp" "ToolSrc/DiskTools/DeviceUuid.cpp"
 					# HostTools:
 					"ToolSrc/HostTools/SysTools.hpp" "ToolSrc/HostTools/SysTools.cpp"
