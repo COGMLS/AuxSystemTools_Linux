@@ -24,9 +24,12 @@ namespace LnxImgBack
 		private:
 
 			// Store the UUIDs associated with the storage device:
-			// Index 0: Device
-			// Other indexes: device partitions
+			// Index 0: Device (Can be empty if was not recovered)
+			// Other indexes: device partitions (using the same index by the system. i.e. sdb1, sdb2)
 			std::vector<DeviceUuid> uuid;
+
+			// Device FS path:
+			std::filesystem::path device_fs_path;
 
 			// Device name. I.e. sda, hda, etc.
 			std::string device;
@@ -57,13 +60,31 @@ namespace LnxImgBack
 
 		public:
 
-			storage_device (std::filesystem::path device_path);
+			/**
+			 * @brief Create an storage device object to represent the system storage (sda, hda, etc)
+			 * @param device_fs_path Path to device block, located in /sys/block
+			 */
+			storage_device (std::filesystem::path device_fs_path);
+
+			/**
+			 * @brief Create an storage device object to represent the system storage (sda, hda, etc)
+			 * @param device_name Device name. Like sda, sdb, etc.
+			 */
+			//storage_device (std::string device_name);
 
 			storage_device (const storage_device& other);
 
 			storage_device (storage_device&& other) noexcept;
 
 			~storage_device();
+
+			//bool operator== (const LnxImgBack::storage_device& other);
+
+			//bool operator== (const LnxImgBack::storage_device& other);
+
+			LnxImgBack::storage_device& operator= (const LnxImgBack::storage_device& other);
+
+			LnxImgBack::storage_device& operator= (LnxImgBack::storage_device&& other) noexcept;
 
 			void refresh();
 
@@ -79,7 +100,7 @@ namespace LnxImgBack
 
 			std::string getModel();
 
-			std::string getPath();
+			std::filesystem::path getPath();
 
 			std::vector<DeviceUuid> getAssociatedUuid();
 	};

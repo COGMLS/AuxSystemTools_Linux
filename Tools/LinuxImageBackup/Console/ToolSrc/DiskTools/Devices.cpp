@@ -1,10 +1,19 @@
 #include "Devices.hpp"
 
-LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
+LnxImgBack::storage_device::storage_device(std::filesystem::path device_fs_path)
 {
+	this->device_fs_path = device_fs_path;
+
+	this->size = 0;
+	this->attach_status = false;
+	this->removable_status = false;
+	this->hidden_status = false;
+	this->device_state = false;
+	this->objStatus = 0;
+
 	this->uuid.push_back(DeviceUuid());
 
-	if (std::filesystem::exists(device_path))
+	if (std::filesystem::exists(this->device_fs_path))
 	{
 		/** Array to store paths to files, links and block files
 		 * Device Paths:
@@ -18,39 +27,39 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 		 */
 		std::array<std::filesystem::path, 7> device_files;
 
-		for (const std::filesystem::directory_entry& d : std::filesystem::directory_iterator(device_path))
+		for (const std::filesystem::directory_entry& d : std::filesystem::directory_iterator(this->device_fs_path))
 		{
-			if (d.path().stem() == "device")
+			if (d.path().stem().string() == "device")
 			{
 				device_files[0] = d.path();
 			}
 
-			if (d.path().stem() == "dev")
+			if (d.path().stem().string() == "dev")
 			{
 				device_files[1] = d.path();
 			}
 
-			if (d.path().stem() == "ext_range")
+			if (d.path().stem().string() == "ext_range")
 			{
 				device_files[2] = d.path();
 			}
 
-			if (d.path().stem() == "hidden")
+			if (d.path().stem().string() == "hidden")
 			{
 				device_files[3] = d.path();
 			}
 
-			if (d.path().stem() == "removable")
+			if (d.path().stem().string() == "removable")
 			{
 				device_files[4] = d.path();
 			}
 
-			if (d.path().stem() == "size")
+			if (d.path().stem().string() == "size")
 			{
 				device_files[5] = d.path();
 			}
 
-			if (d.path().stem() == "uevent")
+			if (d.path().stem().string() == "uevent")
 			{
 				device_files[6] = d.path();
 			}
@@ -58,6 +67,7 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 
 		unsigned long long ull_ext_range = 0;
 		unsigned long long ull_size = 0;
+		bool ignorePerms = true;
 		
 		for (size_t i = 0; i < device_files.size(); i++)
 		{
@@ -73,7 +83,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							if (d.is_regular_file() && d.path().stem().string() == "model")
 							{
 								std::vector<std::string> data;
-								if (extractFile(d.path(), data) == 0)
+								int extractStatus = extractFile(d.path(), data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									this->device_model = data[0];
 								}
@@ -83,7 +94,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							if (d.is_regular_file() && d.path().stem().string() == "state")
 							{
 								std::vector<std::string> data;
-								if (extractFile(d.path(), data) == 0)
+								int extractStatus = extractFile(d.path(), data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (data[0] == "running")
 									{
@@ -107,7 +119,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!data.empty())
 									{
@@ -127,7 +140,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!data.empty())
 									{
@@ -155,7 +169,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!data.empty())
 									{
@@ -182,7 +197,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!data.empty())
 									{
@@ -209,7 +225,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!data.empty())
 									{
@@ -237,7 +254,8 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 							{
 								// Extract the file content:
 								std::vector<std::string> data;
-								if (extractFile(device_files[i], data) == 0)
+								int extractStatus = extractFile(device_files[i], data, ignorePerms);
+								if (extractStatus == 0)
 								{
 									if (!extractFileValue(data, "DEVNAME", this->device))
 									{
@@ -283,4 +301,130 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_path)
 			}
 		}
 	}
+}
+
+//LnxImgBack::storage_device::storage_device(std::string device_name)
+//{
+//	std::filesystem::path device_fs_path = std::filesystem::path(SYS_BLOCK_PATH) / device_name;
+//	LnxImgBack::storage_device other(device_fs_path);
+//	*this = other;
+//}
+
+LnxImgBack::storage_device::storage_device(const storage_device &other)
+{
+	this->uuid = other.uuid;
+	this->device_fs_path = other.device_fs_path;
+	this->device = other.device;
+	this->device_path = other.device_path;
+	this->device_model = other.device_model;
+	this->size = other.size;
+	this->attach_status = other.attach_status;
+	this->removable_status = other.removable_status;
+	this->hidden_status = other.hidden_status;
+	this->device_state = other.device_state;
+	this->objStatus = other.objStatus;
+}
+
+LnxImgBack::storage_device::storage_device(storage_device &&other) noexcept
+{
+	this->uuid = std::move(other.uuid);
+	this->device_fs_path = std::move(other.device_fs_path);
+	this->device = std::move(other.device);
+	this->device_path = std::move(other.device_path);
+	this->device_model = std::move(other.device_model);
+	this->size = std::move(other.size);
+	this->attach_status = std::move(other.attach_status);
+	this->removable_status = std::move(other.removable_status);
+	this->hidden_status = std::move(other.hidden_status);
+	this->device_state = std::move(other.device_state);
+	this->objStatus = std::move(other.objStatus);
+}
+
+LnxImgBack::storage_device::~storage_device()
+{
+}
+
+LnxImgBack::storage_device &LnxImgBack::storage_device::operator=(const LnxImgBack::storage_device &other)
+{
+    this->uuid = other.uuid;
+	this->device_fs_path = other.device_fs_path;
+	this->device = other.device;
+	this->device_path = other.device_path;
+	this->device_model = other.device_model;
+	this->size = other.size;
+	this->attach_status = other.attach_status;
+	this->removable_status = other.removable_status;
+	this->hidden_status = other.hidden_status;
+	this->device_state = other.device_state;
+	this->objStatus = other.objStatus;
+
+	return *this;
+}
+
+LnxImgBack::storage_device &LnxImgBack::storage_device::operator=(LnxImgBack::storage_device &&other) noexcept
+{
+    if (this == &other)
+	{
+		return *this;
+	}
+
+	this->uuid = std::move(other.uuid);
+	this->device_fs_path = std::move(other.device_fs_path);
+	this->device = std::move(other.device);
+	this->device_path = std::move(other.device_path);
+	this->device_model = std::move(other.device_model);
+	this->size = std::move(other.size);
+	this->attach_status = std::move(other.attach_status);
+	this->removable_status = std::move(other.removable_status);
+	this->hidden_status = std::move(other.hidden_status);
+	this->device_state = std::move(other.device_state);
+	this->objStatus = std::move(other.objStatus);
+	
+	return *this;
+}
+
+void LnxImgBack::storage_device::refresh()
+{
+	LnxImgBack::storage_device other(this->device_fs_path);
+	*this = other;
+}
+
+DeviceUuid LnxImgBack::storage_device::getUuid()
+{
+    return this->uuid[0];
+}
+
+std::string LnxImgBack::storage_device::getDevice()
+{
+    return this->device;
+}
+
+unsigned long long LnxImgBack::storage_device::getSize()
+{
+    return this->size;
+}
+
+bool LnxImgBack::storage_device::isInUse()
+{
+    return this->attach_status;
+}
+
+std::string LnxImgBack::storage_device::getDevPath()
+{
+    return this->device_path;
+}
+
+std::string LnxImgBack::storage_device::getModel()
+{
+    return this->device_model;
+}
+
+std::filesystem::path LnxImgBack::storage_device::getPath()
+{
+    return this->device_fs_path;
+}
+
+std::vector<DeviceUuid> LnxImgBack::storage_device::getAssociatedUuid()
+{
+    return this->uuid;
 }
