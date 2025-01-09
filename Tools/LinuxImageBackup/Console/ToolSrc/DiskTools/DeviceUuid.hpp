@@ -19,6 +19,7 @@ class DeviceUuid
 
 		std::vector<std::string> uuid;
 		std::string device_name;
+		int device_index;
 
 	public:
 
@@ -59,6 +60,12 @@ class DeviceUuid
 		 * @return If valid a string with the name to the device will return
 		 */
 		std::string device();
+
+		/**
+		 * @brief Get the device index. I.e. 1 from sdb1, 3 from sda3.
+		 * @return Will return -1 if not index device was found. Otherwise will return the index value
+		 */
+		int index();
 
 		bool operator== (const DeviceUuid& other);
 
