@@ -60,9 +60,13 @@ add_executable(
 					LinuxImageBackupTool
 					"main.cpp"
 					# ToolSrc files:
+					# Error Handling:
+					"ToolSrc/Common/ErrorLib/ErrorClasses.hpp" "ToolSrc/Common/ErrorLib/ErrorClasses.cpp"
+					"ToolSrc/Common/ErrorLib/ErrorMessages.hpp"
 					# Common:
 					"ToolSrc/Common/DateTime.hpp" "ToolSrc/Common/DateTime.cpp"
 					"ToolSrc/Common/FileTools.hpp" "ToolSrc/Common/FileTools.cpp"
+					"ToolSrc/Common/ToolExceptions.hpp"
 					# DiskTools:
 					"ToolSrc/DiskTools/DevDefines.hpp"
 					"ToolSrc/DiskTools/Devices.hpp" "ToolSrc/DiskTools/Devices.cpp"
