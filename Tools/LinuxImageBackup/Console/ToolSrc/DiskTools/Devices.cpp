@@ -15,6 +15,36 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_fs_path)
 
 	if (std::filesystem::exists(this->device_fs_path))
 	{
+		// If a block file was passed, try to find the block folder:
+		if (std::filesystem::is_block_file(this->device_fs_path))
+		{
+			std::string device_block_name = device_fs_path.stem().string();
+			this->device_fs_path = std::filesystem::path(SYS_BLOCK_PATH) / device_block_name;
+
+			// Throw an exception for an possible incompatible device with this class:
+			if (!std::filesystem::exists(this->device_fs_path))
+			{
+				LnxImgBack::storage_device_err e(10, STORAGE_DEVICE_ERROR_DEV_FS_PATH_INCOMPATIBLE);
+				throw e;
+			}
+		}
+
+		// If the device_fs_path is not a directory/symlink that leads to a directory or a block device, throw an exception:
+		if (
+				!std::filesystem::is_directory(this->device_fs_path) || 
+				(
+					std::filesystem::is_symlink(this->device_fs_path) && 
+					!(
+						std::filesystem::is_directory(std::filesystem::read_symlink(this->device_fs_path)) || 
+						std::filesystem::is_block_file(std::filesystem::read_symlink(this->device_fs_path))
+					)
+				)
+			)
+		{
+			LnxImgBack::storage_device_err e(10, STORAGE_DEVICE_ERROR_DEV_FS_PATH_INCOMPATIBLE);
+			throw e;
+		}
+
 		/** Array to store paths to files, links and block files
 		 * Device Paths:
 		 * 0: device (link)
@@ -285,17 +315,30 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_fs_path)
 		}
 
 		// Get the associated UUIDs with the storage device:
-		if (!this->device.empty())
+		for (const std::filesystem::directory_entry& d : std::filesystem::directory_iterator("/dev/disk/by-uuid"))
 		{
-			for (const std::filesystem::directory_entry& d : std::filesystem::directory_iterator("/dev/disk/by-uuid"))
-			{
-				DeviceUuid uuid(d);
+			DeviceUuid uuid(d);
 
-				if (!uuid.device().empty())
+			if (!uuid.device().empty())
+			{
+				if (uuid.device().starts_with(this->device))
 				{
-					if (uuid.device().starts_with(this->device))
+					this->uuid.push_back(uuid);
+				}
+			}
+		}
+
+		// Organize the founded UUID devices with the storage uuid vector index (Index 0 is reserved to the current device storage):
+		if (!this->uuid.empty())
+		{
+			for (int i = 1; i < this->uuid.size() - 1; i++)
+			{
+				int j = i + 1;
+				for (j; j < this->uuid.size(); j++)
+				{
+					if (this->uuid[i].index() > this->uuid[j].index())
 					{
-						this->uuid.push_back(uuid);
+						std::swap<DeviceUuid>(this->uuid[i], this->uuid[j]);
 					}
 				}
 			}
@@ -303,12 +346,19 @@ LnxImgBack::storage_device::storage_device(std::filesystem::path device_fs_path)
 	}
 }
 
-//LnxImgBack::storage_device::storage_device(std::string device_name)
-//{
-//	std::filesystem::path device_fs_path = std::filesystem::path(SYS_BLOCK_PATH) / device_name;
-//	LnxImgBack::storage_device other(device_fs_path);
-//	*this = other;
-//}
+LnxImgBack::storage_device::storage_device(std::string device_name)
+{
+	std::filesystem::path device_fs_path = std::filesystem::path(SYS_BLOCK_PATH) / device_name;
+	LnxImgBack::storage_device other(device_fs_path);
+	*this = other;
+}
+
+LnxImgBack::storage_device::storage_device(const char device_name[])
+{
+	std::filesystem::path device_fs_path = std::filesystem::path(SYS_BLOCK_PATH) / device_name;
+	LnxImgBack::storage_device other(device_fs_path);
+	*this = other;
+}
 
 LnxImgBack::storage_device::storage_device(const storage_device &other)
 {

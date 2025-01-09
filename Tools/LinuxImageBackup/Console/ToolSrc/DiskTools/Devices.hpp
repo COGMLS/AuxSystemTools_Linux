@@ -13,6 +13,7 @@
 #include "DevDefines.hpp"
 
 #include "../Common/FileTools.hpp"
+#include "../Common/ToolExceptions.hpp"
 
 namespace LnxImgBack
 {
@@ -70,7 +71,13 @@ namespace LnxImgBack
 			 * @brief Create an storage device object to represent the system storage (sda, hda, etc)
 			 * @param device_name Device name. Like sda, sdb, etc.
 			 */
-			//storage_device (std::string device_name);
+			storage_device (std::string device_name);
+
+			/**
+			 * @brief Create an storage device object to represent the system storage (sda, hda, etc)
+			 * @param device_name Device name. Like sda, sdb, etc.
+			 */
+			storage_device (const char device_name[]);
 
 			storage_device (const storage_device& other);
 
