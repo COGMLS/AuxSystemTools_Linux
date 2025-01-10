@@ -7,6 +7,4 @@
 #include <cstring>
 #include <vector>
 
-#include "Exception.hpp"
-
 #endif // !CONSOLE_OUTPUT_HPP
