@@ -59,6 +59,8 @@ include_directories("{LinuxImageBackupReposRoot}/Console/ToolSrc/HostTools")
 add_executable(
 					LinuxImageBackupTool
 					"main.cpp"
+					"Version.hpp"
+					"VersionInfo.hpp"
 					# ToolSrc files:
 					# Error Handling:
 					"ToolSrc/Common/ErrorLib/ErrorClasses.hpp" "ToolSrc/Common/ErrorLib/ErrorClasses.cpp"
@@ -71,6 +73,8 @@ add_executable(
 					"ToolSrc/DiskTools/DevDefines.hpp"
 					"ToolSrc/DiskTools/Devices.hpp" "ToolSrc/DiskTools/Devices.cpp"
 					"ToolSrc/DiskTools/DeviceUuid.hpp" "ToolSrc/DiskTools/DeviceUuid.cpp"
+					"ToolSrc/DiskTools/fstab.hpp" "ToolSrc/DiskTools/fstab.cpp"
+					"ToolSrc/DiskTools/MountPoint.hpp" "ToolSrc/DiskTools/MountPoint.cpp"
 					# HostTools:
 					"ToolSrc/HostTools/SysTools.hpp" "ToolSrc/HostTools/SysTools.cpp"
 					# ImageTools:
