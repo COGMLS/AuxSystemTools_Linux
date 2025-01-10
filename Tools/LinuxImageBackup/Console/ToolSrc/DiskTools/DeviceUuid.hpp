@@ -37,7 +37,7 @@ class DeviceUuid
 		
 		/**
 		 * @brief Search for a block device and holds the UUID and the reference to the device
-		 * @param uuid_device_path Path to a device block. I.e. /dev/disk/by-uuid/sda1
+		 * @param uuid_device_path Path to a device block. I.e. /dev/disk/by-uuid/<sda1 uuid>
 		 */
 		DeviceUuid (std::filesystem::path uuid_device_path);
 
