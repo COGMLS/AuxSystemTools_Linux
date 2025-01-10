@@ -8,7 +8,7 @@ This document contains the information about the future plans, known bugs, depre
 - Command line interface
 - Full image backup support
 - Full image restore support
-- Support to safety backup/restore operations
+- Support to safe backup/restore operations
 - Support to compressed backups
 - Support to compressed restore
 - Support to remote backup
