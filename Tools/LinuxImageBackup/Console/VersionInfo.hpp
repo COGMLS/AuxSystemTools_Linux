@@ -35,6 +35,7 @@ namespace LnxImgBack
 		v.patch = LINUX_IMAGE_BACKUP_TOOL_PATCH_VERSION;
 		v.build = LINUX_IMAGE_BACKUP_TOOL_BUILD_NUMBER;
 		v.revision = LINUX_IMAGE_BACKUP_TOOL_BUILD_TYPE_NUMBER;
+		v.type = new char(std::strlen(LINUX_IMAGE_BACKUP_TOOL_BUILD_TYPE));
 		std::strcpy(v.type, LINUX_IMAGE_BACKUP_TOOL_BUILD_TYPE);
 		return v;
 	}
