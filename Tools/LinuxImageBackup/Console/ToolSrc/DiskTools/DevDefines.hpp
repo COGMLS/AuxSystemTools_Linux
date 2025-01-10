@@ -5,6 +5,7 @@
 
 #define SYS_BLOCK_PATH 		"/sys/block"
 #define FSTAB_FILE_PATH 	"/etc/fstab"
+#define DISK_UUID_PATH		"/dev/disk/by-uuid"
 
 #define SYS_BLOCK_DEVICE_SIZE_FILE "size"
 #define SYS_BLOCK_DEVICE_BLOCKSIZE "ext_range"
