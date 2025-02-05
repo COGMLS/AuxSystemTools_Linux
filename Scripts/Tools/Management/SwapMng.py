@@ -2,12 +2,12 @@ import os
 import sys
 import shutil
 import psutil
-import enum
+from enum import Enum
 
 # Version info:
 __ScriptVersionNumber__ = {
         "Major"     :   0,
-        "Minor"     :   4,
+        "Minor"     :   5,
         "patch"     :   0
     }
 
@@ -24,7 +24,7 @@ help = [
     "\t-s --size\tSize for modify or create the swap file.",
     "\nEXPERIMENTAL PARAMETERS:",
     "\t-e --enable\tEnable a registered swap",
-    "\t-u --unable\tUnable a registerd swap",
+    "\t-u --disable\tDisable a registered swap",
     "\t-p --path\tComplete swap file path",
     "\t-d --default\tUse default (/swap.img) swap file",
     "\n\t\tTo use a specific parameter help, use <param> -? or <param> -h or <param> --help\n",
@@ -76,13 +76,13 @@ help_params = {
             "\tExamples:\n",
             "Create the default swap file with 8 gigabytes:",
             "\tsudo python SwapMng.py --add --default --size 8G",
-            "Modify the default swap file to 1500 megabytes (NOTE: Carefull setting a low size swap file)",
+            "Modify the default swap file to 1500 megabytes (NOTE: Careful setting a low size swap file)",
             "\tsudo python SwapMng.py --change --default --size 1500M"
         ],
         "enable":[
 
         ],
-        "unable":[
+        "disable":[
 
         ],
         "path":[
@@ -104,6 +104,7 @@ ExperimentalModeWarning = "/!\\ WARNING::The script is under experimental mode!"
 
 # Datatypes:
 
+# Parameter Data class:
 class ParamData:
     __param__ = ""
     __data__ = ""
@@ -118,19 +119,21 @@ class ParamData:
     
     def getData(self) -> str:
         return self.__data__
-    
-class SizeMag(enum):
-    b   = 512,
-    kB  = 1000,
+
+# Size mag enumeration:
+class SizeMag(Enum):
+    B   = 512,
+    KB  = 1000,
     K   = 1024,
     MB  = 1000*1000,
     M   = 1024*1024,
     GB  = 1000*1000*1000,
     G   = 1024*1024*1024
 
+# Size class:
 class Size:
     size = 0
-    mag = SizeMag.b
+    mag = SizeMag.B
     bSizeOk = False
     bMagOk = False
 
@@ -154,10 +157,10 @@ class Size:
 
         match mag:
             case "b":
-                self.mag = SizeMag.b
+                self.mag = SizeMag.B
                 self.bMagOk = True
             case "kB":
-                self.mag = SizeMag.kB
+                self.mag = SizeMag.KB
                 self.bMagOk = True
             case "K":
                 self.mag = SizeMag.K
@@ -221,6 +224,12 @@ usedChangeParam = 0
 usedDefaultParam = 0
 usedPathParam = 0
 usedSizeParam = 0
+usedHelpParam = 0
+usedDefaultParam = 0
+usedDisableParam = 0
+usedEnableParam = 0
+usedDebugParam = 0
+usedExperimentalParam = 0
 
 # Script's functions:
 
@@ -234,16 +243,56 @@ def PrintScriptVersion() -> str:
     strVer += __ScriptVersionNumber__["patch"].__str__()
     return strVer
 
-def show_help(helpCmd = "") -> None:
-    if helpCmd == "":
+# Show the help information:
+def show_help(paramList: list[ParamData]) -> None:
+    if len(paramList):
+        # Print specific help:
+        bFoundSpecificHelpParam = False
+        param = ParamData("", "")
+        for p in paramList:
+            if not p.getParam() == "help":
+                bFoundSpecificHelpParam = True
+                param = p
+                break
+            pass
+        if bFoundSpecificHelpParam:
+            for h in help_params[param.getParam()]:
+                print(h)
+                pass
+            pass
+        else:
+            print(f"Help information not available! Param data: {param}")
+            pass
         pass
     else:
-
+        # Print general help information:
+        for h in help:
+            print(h)
+            pass
         pass
     pass
 
-# Remove command line parameters
-def ResolveCmdLineParams() -> list[ParamData]:
+# Analyze the command line parameters and export the parameter objects
+def AnalyzeCmdLineParams() -> list[ParamData]:
+    global bDebugScript
+    global bExperimentalMode
+    global bShowHelp
+    global bUseDefaultSwapFile
+
+    global usedAddParam
+    global usedRemoveParam
+    global usedChangeParam
+    global usedDefaultParam
+    global usedPathParam
+    global usedSizeParam
+    global usedHelpParam
+    global usedDefaultParam
+    global usedDisableParam
+    global usedEnableParam
+
+    global usedDebugParam
+    global usedExperimentalParam
+
     _list = list[ParamData]
 
     # Make sure the used parameters are not recalculated if this method is called more than one time:
@@ -262,6 +311,13 @@ def ResolveCmdLineParams() -> list[ParamData]:
     foundAddParam = 0
     foundSizeParam = 0
     foundPathParam = 0
+    foundDefaultParam = 0
+    foundEnableParam = 0
+    foundDisableParam = 0
+    foundHelpParam = 0
+    
+    foundDebugParam = 0
+    foundExperimentalParam = 0
 
     param = ""
     data = ""
@@ -273,23 +329,29 @@ def ResolveCmdLineParams() -> list[ParamData]:
             arg = arg.lower()
             # Test for debug:
             if arg == "--debug":
+                foundDebugParam = 1
                 bDebugScript = True
                 param = "debug"
                 paramObj = ParamData(param, "")
                 _list.append(paramObj)
+                usedDebugParam = usedDebugParam + 1
                 pass
             # Enable experimental features:
             if arg == "--experimental":
+                foundExperimentalParam = 1
                 bExperimentalMode = True
                 param = "experimental"
                 paramObj = ParamData(param, "")
                 _list.append(paramObj)
+                usedExperimentalParam = usedExperimentalParam + 1
                 pass
             # Check for help command:
-            for j in help:
-                if arg == j:
-                    bShowHelp = True
-                    break
+            if not bShowHelp:
+                for j in helpCmd:
+                    if arg == j:
+                        bShowHelp = True
+                        break
+                    pass
                 pass
             # Change size:
             if arg == "--change" or arg == "-c":
@@ -329,22 +391,39 @@ def ResolveCmdLineParams() -> list[ParamData]:
                 pass
             # Default param:
             if arg == "--default" or arg == "-d":
+                foundDefaultParam = 1
                 param = "default"
                 paramObj = ParamData(param, "")
                 _list.append(paramObj)
                 usedDefaultParam = usedDefaultParam + 1
                 pass
+            # Enable param:
+            if arg == "--enable" or arg == "-e":
+                foundEnableParam = 1
+                param = "enable"
+                paramObj = ParamData(param, "")
+                _list.append(paramObj)
+                usedEnableParam = usedEnableParam + 1
+                pass
+            # Disable param:
+            if arg == "--disable" or arg == "-u":
+                foundDisableParam = 1
+                param = "disable"
+                paramObj = ParamData(param, "")
+                _list.append(paramObj)
+                usedDisableParam = usedDisableParam + 1
+                pass
             pass
         else:
             # Try to get the new size:
-            if foundSizeParam == 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam != 1:
+            if foundSizeParam == 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam != 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
                 data = arg
                 foundSizeParam = 2
                 paramObj = ParamData(param, data)
                 _list.append(paramObj)
                 pass
             # Try to get the path:
-            if foundSizeParam != 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam == 1:
+            if foundSizeParam != 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam == 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
                 data = arg
                 foundPathParam = 2
                 paramObj = ParamData(param, data)
@@ -359,24 +438,51 @@ def ResolveCmdLineParams() -> list[ParamData]:
 def VerifyParams() -> int:
     status = 0
 
+    global usedAddParam
+    global usedRemoveParam
+    global usedChangeParam
+    global usedDefaultParam
+    global usedPathParam
+    global usedSizeParam
+    global usedHelpParam
+    global usedDefaultParam
+    global usedDisableParam
+    global usedEnableParam
+
+    global bShowHelp
+
     # Test if the parameters was used only one time:
-    if usedAddParam > 1 or usedChangeParam > 1 or usedRemoveParam > 1 or usedDefaultParam > 1 or usedPathParam > 1 or usedSizeParam > 1:
-        status = status + 1
+    if usedAddParam > 1 or usedChangeParam > 1 or usedRemoveParam > 1 or usedDefaultParam > 1 or usedPathParam > 1 or usedSizeParam > 1 or usedHelpParam > 1 or usedDisableParam > 1 or usedEnableParam > 1 or usedDefaultParam > 1:
+        status = 1
         pass
 
     # Test if --add, --change and/or --remove was combined:
-    if (usedAddParam and usedChangeParam) or (usedAddParam and usedChangeParam) or (usedChangeParam and usedRemoveParam) or (usedAddParam and usedChangeParam and usedRemoveParam):
+    if (usedAddParam > 1 and usedChangeParam > 1) or (usedAddParam > 1 and usedChangeParam > 1) or (usedChangeParam > 1 and usedRemoveParam > 1) or (usedAddParam > 1 and usedChangeParam > 1 and usedRemoveParam > 1):
         status = status + 2
         pass
 
     # Test if --default and --path was combined:
-    if usedDefaultParam and usedPathParam:
+    if usedDefaultParam > 1 and usedPathParam > 1:
         status = status + 4
         pass
 
     # Test if --size and --remove was combined:
-    if usedSizeParam and usedRemoveParam:
+    if usedSizeParam > 1 and usedRemoveParam > 1:
         status = status + 8
+        pass
+
+    # Test if help parameter was used more than one time:
+    if usedHelpParam > 1:
+        status = status + 16
+        pass
+
+    # Test if help was used combined with more than one parameter:
+    if (bShowHelp):
+        sumParamsUsing = usedAddParam + usedRemoveParam + usedChangeParam + usedDefaultParam + usedPathParam + usedSizeParam + usedDefaultParam + usedDisableParam + usedEnableParam
+        sumParamsUsing += usedExperimentalParam + usedDebugParam
+        if sumParamsUsing > 1:
+            status = status + 32
+            pass
         pass
 
     return status
@@ -406,7 +512,7 @@ def AddSwapFile(path: str, size: str) -> int:
 
     while i < iMax:
         if bDebugScript:
-            print(f"[DEBUG]::[COMMAND]::{cmdList[i]}")
+            print(f"[DEBUG]::[ADD_SWAP_FILE]::{cmdList[i]}")
             pass
         else:
             j = os.system(cmdList[i])
@@ -436,7 +542,7 @@ def RemoveSwapFile(path) -> int:
 
     while i < iMax:
         if bDebugScript:
-            print(f"[DEBUG]::[COMMAND]::{cmdList[i]}")
+            print(f"[DEBUG]::[REMOVE_SWAP_FILE]::{cmdList[i]}")
             pass
         else:
             j = os.system(cmdList[i])
@@ -452,6 +558,10 @@ def RemoveSwapFile(path) -> int:
 # Change a swap file
 def ChangeSwapFile(path, size) -> int:
     status = 0
+
+    if bDebugScript:
+        print(f"[DEBUG]::Invoking ChangeSwapFile method:")
+        pass
 
     status = AddSwapFile(path, size)
 
@@ -480,37 +590,48 @@ def Read_fstab_File() -> list[str]:
 def Save_fstab_File(fstab: list[str]) -> int:
     status = 0
 
-    # Make a backup copy:
-    if os.path.exists(FSTAB_FILE_PATH_BACKUP):
-        os.remove(FSTAB_FILE_PATH_BACKUP)
-        pass
-
-    shutil.copy(FSTAB_FILE_PATH, FSTAB_FILE_PATH_BACKUP)
-
-    # Write the lines into the fstab file:
-
-    fstabFile = open(FSTAB_FILE_PATH, "w+")
-
-    if fstabFile.writable():
-        i = 1
-        iMax = len(fstab)
-
-        while i < iMax:
-            try:
-                l = fstab[i]
-                if not l.endswith('\n') and i + 1 < iMax:
-                    l = l + '\n'
-                    pass
-                fstabFile.write(l)
-            except:
-                status = 2
-            i = i + 1
+    if bDebugScript:
+        print(f"[DEBUG]::[SAVING_FSTAB_CHANGES]\n\n")
+        i = 0
+        for l in fstab:
+            print(f"[{i}]::{l}")
+            i += 1
             pass
-    else:
-        status = 1
+        print("\nEnd of fstab file\n\n")
         pass
+    else:
+        # Make a backup copy:
+        if os.path.exists(FSTAB_FILE_PATH_BACKUP):
+            os.remove(FSTAB_FILE_PATH_BACKUP)
+            pass
 
-    fstabFile.close()
+        shutil.copy(FSTAB_FILE_PATH, FSTAB_FILE_PATH_BACKUP)
+
+        # Write the lines into the fstab file:
+
+        fstabFile = open(FSTAB_FILE_PATH, "w+")
+
+        if fstabFile.writable():
+            i = 1
+            iMax = len(fstab)
+
+            while i < iMax:
+                try:
+                    l = fstab[i]
+                    if not l.endswith('\n') and i + 1 < iMax:
+                        l = l + '\n'
+                        pass
+                    fstabFile.write(l)
+                except:
+                    status = 2
+                i = i + 1
+                pass
+        else:
+            status = 1
+            pass
+
+        fstabFile.close()
+        pass
 
     return status
 
@@ -560,8 +681,8 @@ def RemovePersistentSwap(fstab: list[str], path: str) -> list[str]:
 
     return fstab
 
-# Unable a persistent swap
-def UnablePersistentSwap(fstab: list[str], path: str) -> list[str]:
+# Disable a persistent swap
+def DisablePersistentSwap(fstab: list[str], path: str) -> list[str]:
     status = 0
     bFoundLine = False
     i = 1
@@ -600,8 +721,8 @@ def EnablePersistentSwap(fstab: list[str], path: str) -> list[str]:
 
 # Verify the fstab file for persistent filesystems swap files.
 # If return 0, none swap path was found.
-# If return 1, found a enabled swap file.
-# If return 2, found an unable swap file.
+# If return 1, found an enabled swap file.
+# If return 2, found a disabled swap file.
 def SwapPersistentStatus(fstab: list[str], path: str) -> int:
     status = 0
 
@@ -622,35 +743,49 @@ def SwapPersistentStatus(fstab: list[str], path: str) -> int:
 
     return status
 
-# Test the platform and the user rights:
-
-if not sys.platform.startswith('linux'):
-    print("This script is only for Linux OS")
-    exit(1)
-
-if os.getuid() != 0 and not bDebugScript:
-    print("[FAIL]::The script is not running with super user rights!")
-    exit(2)
-
-if bShowHelp:
-    pass
-
 # Swap Manager (SwapMng) start here:
 
-if bExperimentalMode:
-    if os.path.exists(FSTAB_FILE_PATH):
-        os.remove(FSTAB_FILE_PATH)
+if __name__ == "__main__":
+    status = 0
+
+    PrintScriptVersion()
+
+    params = AnalyzeCmdLineParams()
+    paramsStatus = VerifyParams()
+
+    # Show the help information:
+    if bShowHelp:
+        show_help(params)
+        sys.exit(0)
         pass
-    shutil.copy(FSTAB_FILE_PATH_BACKUP, FSTAB_FILE_PATH)
 
-    fstabfile = Read_fstab_File()
-    print(f"FSTAB CONTENT:\n{fstabfile}")
-    fstabfile = RemovePersistentSwap(fstabfile, "/dev/disk/by-uuid/FDA3-86BD")
-    fstabfile = MakePersistentSwap(fstabfile, "/myswap.img", "none", "swap", "sw", "0", "0")
-    print(f"FSTAB CONTENT:\n{fstabfile}")
-    UnablePersistentSwap(fstabfile, "/swap.img")
-    EnablePersistentSwap(fstabfile, "/boot/efi")
-    save_status = Save_fstab_File(fstabfile)
-    print(f"Save Status: {save_status}")
+    # Test the platform and the user rights:
+    if not sys.platform.startswith('linux'):
+        print("This script is only for Linux OS")
+        exit(1)
 
+    if os.getuid() != 0 and not bDebugScript:
+        print("[FAIL]::The script is not running with super user rights!")
+        exit(2)
+
+    if bExperimentalMode:
+        # Create a backup file:
+        if os.path.exists(FSTAB_FILE_PATH_BACKUP):
+            os.remove(FSTAB_FILE_PATH_BACKUP)
+            pass
+        shutil.copy(FSTAB_FILE_PATH, FSTAB_FILE_PATH_BACKUP)
+
+        fstabfile = Read_fstab_File()
+        print(f"FSTAB CONTENT:\n{fstabfile}")
+        fstabfile = RemovePersistentSwap(fstabfile, "/dev/disk/by-uuid/FDA3-86BD")
+        fstabfile = MakePersistentSwap(fstabfile, "/myswap.img", "none", "swap", "sw", "0", "0")
+        print(f"FSTAB CONTENT:\n{fstabfile}")
+        DisablePersistentSwap(fstabfile, "/swap.img")
+        EnablePersistentSwap(fstabfile, "/boot/efi")
+        save_status = Save_fstab_File(fstabfile)
+        print(f"Save Status: {save_status}")
+        pass
+    else:
+        pass
+    sys.exit(status)
     pass
