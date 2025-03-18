@@ -109,7 +109,7 @@ class ParamData:
     __param__ = ""
     __data__ = ""
 
-    def __init__(self, param, data) -> None:
+    def __init__(self, param = "", data = "") -> None:
         self.__param__ = param
         self.__data__ = data
         pass
@@ -152,6 +152,7 @@ class Size:
         try:
             number = int(number)
             self.bSizeOk = True
+            self.size = number
         except:
             self.bSizeOk = False
 
@@ -244,24 +245,26 @@ def PrintScriptVersion() -> str:
     return strVer
 
 # Show the help information:
-def show_help(paramList: list[ParamData]) -> None:
-    if len(paramList):
+def show_help() -> None:
+    global params
+
+    if len(params) > 0:
         # Print specific help:
         bFoundSpecificHelpParam = False
-        param = ParamData("", "")
-        for p in paramList:
-            if not p.getParam() == "help":
+        i = 0
+        iMax = len(params)
+        while i < iMax:
+            if params[i].getParam() != "help":
                 bFoundSpecificHelpParam = True
-                param = p
                 break
             pass
         if bFoundSpecificHelpParam:
-            for h in help_params[param.getParam()]:
+            for h in help_params[params[i].getParam()]:
                 print(h)
                 pass
             pass
         else:
-            print(f"Help information not available! Param data: {param}")
+            print(f"Help information not available! Param data: {params[i].getParam()} | {params[i].getData()}")
             pass
         pass
     else:
@@ -273,7 +276,9 @@ def show_help(paramList: list[ParamData]) -> None:
     pass
 
 # Analyze the command line parameters and export the parameter objects
-def AnalyzeCmdLineParams() -> list[ParamData]:
+def AnalyzeCmdLineParams() -> None:
+    global params
+
     global bDebugScript
     global bExperimentalMode
     global bShowHelp
@@ -293,7 +298,8 @@ def AnalyzeCmdLineParams() -> list[ParamData]:
     global usedDebugParam
     global usedExperimentalParam
 
-    _list = list[ParamData]
+    #_list = [ParamData]
+    params.clear()
 
     # Make sure the used parameters are not recalculated if this method is called more than one time:
 
@@ -322,6 +328,21 @@ def AnalyzeCmdLineParams() -> list[ParamData]:
     param = ""
     data = ""
 
+    # Check for help command:
+    for arg in sys.argv:
+        if arg.startswith('-'):
+            arg = arg.lower()
+            for j in helpCmd:
+                if arg == j:
+                    bShowHelp = True
+                    foundHelpParam = 1
+                    usedHelpParam = usedHelpParam + 1
+                    pass
+                pass
+            pass
+        pass
+
+    # Check for other arguments in command line:
     for arg in sys.argv:
         if arg.startswith('-'):
             param = ""
@@ -332,8 +353,7 @@ def AnalyzeCmdLineParams() -> list[ParamData]:
                 foundDebugParam = 1
                 bDebugScript = True
                 param = "debug"
-                paramObj = ParamData(param, "")
-                _list.append(paramObj)
+                params.append(ParamData(param, ""))
                 usedDebugParam = usedDebugParam + 1
                 pass
             # Enable experimental features:
@@ -341,40 +361,28 @@ def AnalyzeCmdLineParams() -> list[ParamData]:
                 foundExperimentalParam = 1
                 bExperimentalMode = True
                 param = "experimental"
-                paramObj = ParamData(param, "")
-                _list.append(paramObj)
+                params.append(ParamData(param, ""))
                 usedExperimentalParam = usedExperimentalParam + 1
-                pass
-            # Check for help command:
-            if not bShowHelp:
-                for j in helpCmd:
-                    if arg == j:
-                        bShowHelp = True
-                        break
-                    pass
                 pass
             # Change size:
             if arg == "--change" or arg == "-c":
                 foundChangeSizeParam = 2
                 param = "change"
-                paramObj = ParamData(param, data)
-                _list.append(paramObj)
+                params.append(ParamData(param, data))
                 usedChangeParam = usedChangeParam + 1
                 pass
             # Add param:
             if arg == "--add" or arg == "-a":
                 foundAddParam = 2
                 param = "add"
-                paramObj = ParamData(param, data)
-                _list.append(paramObj)
+                params.append(ParamData(param, data))
                 usedAddParam = usedAddParam + 1
                 pass
             # Remove param:
             if arg == "--remove" or arg == "-r":
                 foundRemoveParam = 2
                 param = "remove"
-                paramObj = ParamData(param, data)
-                _list.append(paramObj)
+                params.append(ParamData(param, data))
                 usedRemoveParam = usedRemoveParam + 1
                 pass
             # Size:
@@ -382,57 +390,62 @@ def AnalyzeCmdLineParams() -> list[ParamData]:
                 foundSizeParam = 1
                 param = "size"
                 usedSizeParam = usedSizeParam + 1
+                if bShowHelp:
+                    params.append(ParamData(param, ""))
+                    pass
                 pass
             # Path param:
             if arg == "--path" or arg == "-p":
                 foundPathParam = 1
                 param = "path"
                 usedPathParam = usedPathParam + 1
+                if bShowHelp:
+                    params.append(ParamData(param, ""))
+                    pass
                 pass
             # Default param:
             if arg == "--default" or arg == "-d":
                 foundDefaultParam = 1
                 param = "default"
-                paramObj = ParamData(param, "")
-                _list.append(paramObj)
+                params.append(ParamData(param, ""))
                 usedDefaultParam = usedDefaultParam + 1
                 pass
             # Enable param:
             if arg == "--enable" or arg == "-e":
                 foundEnableParam = 1
                 param = "enable"
-                paramObj = ParamData(param, "")
-                _list.append(paramObj)
+                params.append(ParamData(param, ""))
                 usedEnableParam = usedEnableParam + 1
                 pass
             # Disable param:
             if arg == "--disable" or arg == "-u":
                 foundDisableParam = 1
                 param = "disable"
-                paramObj = ParamData(param, "")
-                _list.append(paramObj)
+                params.append(ParamData(param, ""))
                 usedDisableParam = usedDisableParam + 1
                 pass
             pass
         else:
-            # Try to get the new size:
-            if foundSizeParam == 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam != 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
-                data = arg
-                foundSizeParam = 2
-                paramObj = ParamData(param, data)
-                _list.append(paramObj)
-                pass
-            # Try to get the path:
-            if foundSizeParam != 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam == 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
-                data = arg
-                foundPathParam = 2
-                paramObj = ParamData(param, data)
-                _list.append(paramObj)
+            # If not help command, look for argument data:
+            if not bShowHelp:
+                # Try to get the new size:
+                if foundSizeParam == 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam != 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
+                    data = arg
+                    foundSizeParam = 2
+                    params.append(ParamData(param, data))
+                    pass
+                # Try to get the path:
+                if foundSizeParam != 1 and foundRemoveParam != 1 and foundAddParam != 1 and foundChangeSizeParam != 1 and foundPathParam == 1 and foundDisableParam != 1 and foundDefaultParam != 1 and foundEnableParam != 1 and foundHelpParam != 1:
+                    data = arg
+                    foundPathParam = 2
+                    params.append(ParamData(param, data))
+                    pass
                 pass
             pass
         pass
 
-    return _list
+    #return _list
+    pass
 
 # Verify if the parameters was used only one time and if no incompatible parameter was combined:
 def VerifyParams() -> int:
@@ -748,14 +761,28 @@ def SwapPersistentStatus(fstab: list[str], path: str) -> int:
 if __name__ == "__main__":
     status = 0
 
+    i = 0
+    iMax = len(sys.argv)
+    print(f"iMax: {iMax}")
+    for arg in sys.argv:
+        print(f"[{i}]::{arg}")
+        pass
+
     PrintScriptVersion()
 
-    params = AnalyzeCmdLineParams()
+    AnalyzeCmdLineParams()
     paramsStatus = VerifyParams()
+
+    i = 0
+    iMax = len(params)
+    print(f"\nParam List:\nLen:{iMax}\n")
+    for p in params:
+        print(f"Param: {p.getParam()} | Data: {p.getData()}")
+        pass
 
     # Show the help information:
     if bShowHelp:
-        show_help(params)
+        show_help()
         sys.exit(0)
         pass
 
